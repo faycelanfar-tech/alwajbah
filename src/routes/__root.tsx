@@ -10,6 +10,7 @@ import {
 import { useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/hooks/use-auth";
+import { SettingsProvider } from "@/hooks/use-settings";
 import { supabase } from "@/integrations/supabase/client";
 import appCss from "../styles.css?url";
 
