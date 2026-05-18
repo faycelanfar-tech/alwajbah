@@ -14,6 +14,7 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppStudentsRouteImport } from './routes/_app/students'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
+import { Route as AppClassesRouteImport } from './routes/_app/classes'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -39,16 +40,23 @@ const AppDashboardRoute = AppDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AppRoute,
 } as any)
+const AppClassesRoute = AppClassesRouteImport.update({
+  id: '/classes',
+  path: '/classes',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/classes': typeof AppClassesRoute
   '/dashboard': typeof AppDashboardRoute
   '/students': typeof AppStudentsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/classes': typeof AppClassesRoute
   '/dashboard': typeof AppDashboardRoute
   '/students': typeof AppStudentsRoute
 }
@@ -57,19 +65,21 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
+  '/_app/classes': typeof AppClassesRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/students': typeof AppStudentsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/dashboard' | '/students'
+  fullPaths: '/' | '/login' | '/classes' | '/dashboard' | '/students'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/dashboard' | '/students'
+  to: '/' | '/login' | '/classes' | '/dashboard' | '/students'
   id:
     | '__root__'
     | '/'
     | '/_app'
     | '/login'
+    | '/_app/classes'
     | '/_app/dashboard'
     | '/_app/students'
   fileRoutesById: FileRoutesById
@@ -117,15 +127,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppDashboardRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/classes': {
+      id: '/_app/classes'
+      path: '/classes'
+      fullPath: '/classes'
+      preLoaderRoute: typeof AppClassesRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppRouteChildren {
+  AppClassesRoute: typeof AppClassesRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppStudentsRoute: typeof AppStudentsRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppClassesRoute: AppClassesRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppStudentsRoute: AppStudentsRoute,
 }
