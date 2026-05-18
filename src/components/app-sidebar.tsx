@@ -4,7 +4,7 @@ import { useSettings } from "@/hooks/use-settings";
 import { LayoutDashboard, Users, GraduationCap, AlertTriangle, FileBarChart, Settings as SettingsIcon, LogOut, UserCog, School } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const nav = [
+const nav: { to: string; label: string; icon: typeof LayoutDashboard; roles: string[] }[] = [
   { to: "/dashboard", label: "الرئيسية", icon: LayoutDashboard, roles: ["admin", "teacher"] },
   { to: "/violations", label: "المخالفات", icon: AlertTriangle, roles: ["admin", "teacher"] },
   { to: "/students", label: "الطلاب", icon: GraduationCap, roles: ["admin", "teacher"] },
@@ -12,7 +12,7 @@ const nav = [
   { to: "/teachers", label: "المعلمون", icon: UserCog, roles: ["admin"] },
   { to: "/reports", label: "التقارير", icon: FileBarChart, roles: ["admin", "teacher"] },
   { to: "/settings", label: "الإعدادات", icon: SettingsIcon, roles: ["admin"] },
-] as const;
+];
 
 export function AppSidebar() {
   const { role, profile, signOut } = useAuth();
