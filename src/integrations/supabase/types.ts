@@ -14,16 +14,221 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      app_settings: {
+        Row: {
+          footer_text: string | null
+          id: number
+          logo_url: string | null
+          primary_color: string | null
+          school_name: string
+          subtitle: string | null
+          updated_at: string
+        }
+        Insert: {
+          footer_text?: string | null
+          id?: number
+          logo_url?: string | null
+          primary_color?: string | null
+          school_name?: string
+          subtitle?: string | null
+          updated_at?: string
+        }
+        Update: {
+          footer_text?: string | null
+          id?: number
+          logo_url?: string | null
+          primary_color?: string | null
+          school_name?: string
+          subtitle?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      classes: {
+        Row: {
+          created_at: string
+          grade: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          grade?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          grade?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          full_name: string | null
+          id: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          full_name?: string | null
+          id: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      students: {
+        Row: {
+          class_id: string | null
+          created_at: string
+          created_by: string | null
+          full_name: string
+          id: string
+          notes: string | null
+          student_number: string | null
+        }
+        Insert: {
+          class_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          full_name: string
+          id?: string
+          notes?: string | null
+          student_number?: string | null
+        }
+        Update: {
+          class_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          full_name?: string
+          id?: string
+          notes?: string | null
+          student_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "students_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      violation_types: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          severity: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          severity?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          severity?: string
+        }
+        Relationships: []
+      }
+      violations: {
+        Row: {
+          action_taken: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          student_id: string
+          type_id: string | null
+          violation_date: string
+        }
+        Insert: {
+          action_taken?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          student_id: string
+          type_id?: string | null
+          violation_date?: string
+        }
+        Update: {
+          action_taken?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          student_id?: string
+          type_id?: string | null
+          violation_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "violations_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "violations_type_id_fkey"
+            columns: ["type_id"]
+            isOneToOne: false
+            referencedRelation: "violation_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "teacher"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +355,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "teacher"],
+    },
   },
 } as const
