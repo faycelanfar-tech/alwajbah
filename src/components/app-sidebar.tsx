@@ -42,7 +42,7 @@ export function AppSidebar() {
           const active = pathname === item.to;
           const Icon = item.icon;
           return (
-            <Link key={item.to} to={item.to}
+            <Link key={item.to} to={item.to as "/dashboard"}
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
                 active
@@ -88,7 +88,7 @@ export function MobileBar() {
             const Icon = item.icon;
             const active = pathname === item.to;
             return (
-              <Link key={item.to} to={item.to} className={cn("flex flex-col items-center gap-1 py-2 px-2 flex-1 text-xs", active ? "text-primary" : "text-muted-foreground")}>
+              <Link key={item.to} to={item.to as "/dashboard"} className={cn("flex flex-col items-center gap-1 py-2 px-2 flex-1 text-xs", active ? "text-primary" : "text-muted-foreground")}>
                 <Icon className="w-5 h-5" />
                 <span className="truncate">{item.label}</span>
               </Link>
