@@ -28,7 +28,7 @@ function ClassesPage() {
 
   const add = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("classes").insert({ name, grade_level: grade || null });
+      const { error } = await supabase.from("classes").insert({ name, grade: grade || null });
       if (error) throw error;
     },
     onSuccess: () => { toast.success("تمت الإضافة"); qc.invalidateQueries({ queryKey: ["classes-with-count"] }); qc.invalidateQueries({ queryKey: ["classes"] }); setOpen(false); setName(""); setGrade(""); },
@@ -77,7 +77,7 @@ function ClassesPage() {
                   </div>
                   <div>
                     <p className="font-bold text-lg">{c.name}</p>
-                    <p className="text-sm text-muted-foreground">{c.grade_level || "—"}</p>
+                    <p className="text-sm text-muted-foreground">{c.grade || "—"}</p>
                   </div>
                 </div>
                 <Button size="icon" variant="ghost" onClick={() => { if (confirm("حذف الفصل؟")) del.mutate(c.id); }}>
