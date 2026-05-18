@@ -113,6 +113,13 @@ function LoginPage() {
                 {needsSetup ? "إنشاء الحساب" : "تسجيل الدخول"}
               </Button>
             </form>
+            {!needsSetup && (
+              <div className="text-center mt-4">
+                <Link to="/forgot-password" className="text-sm text-primary hover:underline">
+                  نسيت كلمة المرور؟
+                </Link>
+              </div>
+            )}
           </CardContent>
         </Card>
 
