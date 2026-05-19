@@ -44,7 +44,7 @@ function Dashboard() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">أهلاً، {profile?.full_name || profile?.username} 👋</h1>
-        <p className="text-muted-foreground mt-1">نظرة عامة على نشاط {settings.school_name}</p>
+        <p className="text-muted-foreground mt-1">نظرة عامة على نشاط {displayName}</p>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
