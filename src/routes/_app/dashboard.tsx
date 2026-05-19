@@ -10,7 +10,7 @@ export const Route = createFileRoute("/_app/dashboard")({ component: Dashboard }
 
 function Dashboard() {
   const { profile } = useAuth();
-  const { settings } = useSettings();
+  const { displayName } = useSettings();
 
   const { data: stats } = useQuery({
     queryKey: ["dashboard-stats"],

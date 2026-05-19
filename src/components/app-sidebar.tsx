@@ -16,7 +16,7 @@ const nav: { to: string; label: string; icon: typeof LayoutDashboard; roles: str
 
 export function AppSidebar() {
   const { role, profile, signOut } = useAuth();
-  const { settings } = useSettings();
+  const { settings, displayName } = useSettings();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
@@ -31,7 +31,7 @@ export function AppSidebar() {
             </div>
           )}
           <div className="min-w-0">
-            <p className="font-bold text-sm truncate">{settings.school_name}</p>
+            <p className="font-bold text-sm truncate">{displayName}</p>
             <p className="text-xs text-sidebar-foreground/60 truncate">{settings.subtitle}</p>
           </div>
         </div>

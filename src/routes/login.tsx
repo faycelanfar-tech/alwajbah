@@ -14,7 +14,7 @@ export const Route = createFileRoute("/login")({ component: LoginPage });
 
 function LoginPage() {
   const { signIn, user, loading } = useAuth();
-  const { settings } = useSettings();
+  const { settings, displayName } = useSettings();
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -71,7 +71,7 @@ function LoginPage() {
               <School className="w-12 h-12" />
             </div>
           )}
-          <h1 className="mt-5 text-3xl font-bold">{settings.school_name}</h1>
+          <h1 className="mt-5 text-3xl font-bold">{displayName}</h1>
           <p className="mt-2 text-white/80">{settings.subtitle}</p>
         </div>
 
@@ -105,7 +105,7 @@ function LoginPage() {
                 <Label htmlFor="password">كلمة المرور</Label>
                 <div className="relative">
                   <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="أدخل كلمة المرور" className="pr-9" required minLength={6} />
+                  <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="أدخل كلمة المرور" className="pr-9" required />
                 </div>
               </div>
               <Button type="submit" className="w-full" size="lg" disabled={submitting}>
