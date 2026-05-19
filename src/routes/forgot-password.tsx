@@ -43,7 +43,7 @@ function ForgotPage() {
     <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-6 text-white">
-          <h1 className="text-2xl font-bold">{settings.school_name}</h1>
+          <h1 className="text-2xl font-bold">{settings.school_name?.trim() || "نظام إدارة المخالفات"}</h1>
         </div>
         <Card className="shadow-elegant border-0">
           <CardHeader>
