@@ -176,6 +176,7 @@ export type Database = {
           created_by: string | null
           description: string | null
           id: string
+          period: number | null
           student_id: string
           type_id: string | null
           violation_date: string
@@ -186,6 +187,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
+          period?: number | null
           student_id: string
           type_id?: string | null
           violation_date?: string
@@ -196,6 +198,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
+          period?: number | null
           student_id?: string
           type_id?: string | null
           violation_date?: string
