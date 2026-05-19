@@ -110,7 +110,7 @@ function ReportsPage() {
       sections: [{
         properties: { page: { textDirection: "rlTb" as any } },
         children: [
-          new Paragraph({ heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER, children: [new TextRun({ text: settings.school_name, bold: true })] }),
+          new Paragraph({ heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER, children: [new TextRun({ text: settings.school_name?.trim() || "نظام إدارة المخالفات", bold: true })] }),
           new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: `تقرير المخالفات السلوكية من ${from} إلى ${to}`, bold: true })] }),
           new Paragraph({ text: `إجمالي المخالفات: ${violations.length}`, alignment: AlignmentType.CENTER }),
           new Paragraph({ text: "" }),

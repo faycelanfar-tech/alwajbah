@@ -48,7 +48,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "نظام إدارة المخالفات السلوكية" },
-      { name: "description", content: "نظام إدارة المخالفات السلوكية لمدرسة الوجبة الابتدائية" },
+      { name: "description", content: "نظام إدارة المخالفات السلوكية المدرسية" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },

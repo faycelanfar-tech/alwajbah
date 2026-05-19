@@ -10,15 +10,15 @@ interface Settings {
 }
 
 const defaults: Settings = {
-  school_name: "مدرسة الوجبة الابتدائية",
+  school_name: "",
   subtitle: "نظام إدارة المخالفات السلوكية",
   logo_url: null,
   footer_text: "تطوير: فيصل أحمد عنفار",
   primary_color: "#1d4ed8",
 };
 
-const Ctx = createContext<{ settings: Settings; refresh: () => Promise<void> }>({
-  settings: defaults, refresh: async () => {},
+const Ctx = createContext<{ settings: Settings; displayName: string; refresh: () => Promise<void> }>({
+  settings: defaults, displayName: "نظام إدارة المخالفات", refresh: async () => {},
 });
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
@@ -31,7 +31,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => { refresh(); }, []);
 
-  return <Ctx.Provider value={{ settings, refresh }}>{children}</Ctx.Provider>;
+  const displayName = settings.school_name?.trim() || "نظام إدارة المخالفات";
+
+  return <Ctx.Provider value={{ settings, displayName, refresh }}>{children}</Ctx.Provider>;
 }
 
 export const useSettings = () => useContext(Ctx);

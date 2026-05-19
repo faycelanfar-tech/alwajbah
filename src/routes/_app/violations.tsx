@@ -11,15 +11,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, Search, Settings } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/violations")({ component: ViolationsPage });
 
+const DEGREES = ["الأولى", "الثانية", "الثالثة", "الرابعة"] as const;
+
 const severityColor: Record<string, string> = {
-  "خفيفة": "bg-emerald-100 text-emerald-700 border-emerald-200",
-  "متوسطة": "bg-amber-100 text-amber-700 border-amber-200",
-  "شديدة": "bg-rose-100 text-rose-700 border-rose-200",
+  "الأولى": "bg-emerald-100 text-emerald-700 border-emerald-200",
+  "الثانية": "bg-amber-100 text-amber-700 border-amber-200",
+  "الثالثة": "bg-orange-100 text-orange-700 border-orange-200",
+  "الرابعة": "bg-rose-100 text-rose-700 border-rose-200",
 };
 
 function ViolationsPage() {
@@ -33,14 +36,19 @@ function ViolationsPage() {
     queryFn: async () => (await supabase.from("violations").select("*, students(full_name, classes(name)), violation_types(name, severity), profiles!violations_created_by_fkey(full_name, username)").order("created_at", { ascending: false })).data ?? [],
   });
 
+  const { data: classes = [] } = useQuery({
+    queryKey: ["classes"],
+    queryFn: async () => (await supabase.from("classes").select("id, name").order("name")).data ?? [],
+  });
+
   const { data: students = [] } = useQuery({
-    queryKey: ["students"],
-    queryFn: async () => (await supabase.from("students").select("id, full_name").order("full_name")).data ?? [],
+    queryKey: ["students-with-class"],
+    queryFn: async () => (await supabase.from("students").select("id, full_name, class_id").order("full_name")).data ?? [],
   });
 
   const { data: types = [] } = useQuery({
     queryKey: ["violation_types"],
-    queryFn: async () => (await supabase.from("violation_types").select("*").order("name")).data ?? [],
+    queryFn: async () => (await supabase.from("violation_types").select("*").order("severity").order("name")).data ?? [],
   });
 
   const filtered = violations.filter((v: any) =>
@@ -62,7 +70,7 @@ function ViolationsPage() {
         </div>
         <div className="flex gap-2">
           {isAdmin && <ManageTypesDialog types={types} />}
-          <AddViolationDialog students={students} types={types} />
+          <AddViolationDialog classes={classes} students={students} types={types} />
         </div>
       </div>
 
@@ -87,9 +95,10 @@ function ViolationsPage() {
                         {v.students?.classes?.name && <Badge variant="secondary">{v.students.classes.name}</Badge>}
                         {v.violation_types?.severity && (
                           <Badge variant="outline" className={severityColor[v.violation_types.severity] || ""}>
-                            {v.violation_types.severity}
+                            الدرجة {v.violation_types.severity}
                           </Badge>
                         )}
+                        {v.period && <Badge variant="outline">الحصة {v.period}</Badge>}
                       </div>
                       <p className="mt-2 text-sm font-medium text-primary">{v.violation_types?.name || "—"}</p>
                       {v.description && <p className="mt-1 text-sm text-muted-foreground">{v.description}</p>}
@@ -115,19 +124,31 @@ function ViolationsPage() {
   );
 }
 
-function AddViolationDialog({ students, types }: { students: any[]; types: any[] }) {
+function AddViolationDialog({ classes, students, types }: { classes: any[]; students: any[]; types: any[] }) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({
-    student_id: "", type_id: "", description: "", action_taken: "",
+  const initial = {
+    class_id: "", student_id: "", type_id: "", period: "", description: "", action_taken: "",
     violation_date: new Date().toISOString().slice(0, 10),
-  });
+  };
+  const [form, setForm] = useState(initial);
   const qc = useQueryClient();
+
+  const classStudents = useMemo(
+    () => students.filter((s) => s.class_id === form.class_id),
+    [students, form.class_id]
+  );
+  const selectedType = useMemo(
+    () => types.find((t) => t.id === form.type_id),
+    [types, form.type_id]
+  );
+
   const add = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.from("violations").insert({
         student_id: form.student_id,
         type_id: form.type_id || null,
+        period: form.period ? Number(form.period) : null,
         description: form.description || null,
         action_taken: form.action_taken || null,
         violation_date: form.violation_date,
@@ -140,35 +161,61 @@ function AddViolationDialog({ students, types }: { students: any[]; types: any[]
       qc.invalidateQueries({ queryKey: ["violations"] });
       qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
       setOpen(false);
-      setForm({ student_id: "", type_id: "", description: "", action_taken: "", violation_date: new Date().toISOString().slice(0, 10) });
+      setForm(initial);
     },
     onError: (e: any) => toast.error(e.message),
   });
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setForm(initial); }}>
       <DialogTrigger asChild><Button><Plus className="w-4 h-4 ml-1" /> تسجيل مخالفة</Button></DialogTrigger>
       <DialogContent className="max-w-lg">
         <DialogHeader><DialogTitle>تسجيل مخالفة جديدة</DialogTitle></DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>الطالب *</Label>
-            <Select value={form.student_id} onValueChange={(v) => setForm({ ...form, student_id: v })}>
-              <SelectTrigger><SelectValue placeholder="اختر الطالب" /></SelectTrigger>
-              <SelectContent>{students.map((s) => <SelectItem key={s.id} value={s.id}>{s.full_name}</SelectItem>)}</SelectContent>
+            <Label>الصف *</Label>
+            <Select value={form.class_id} onValueChange={(v) => setForm({ ...form, class_id: v, student_id: "" })}>
+              <SelectTrigger><SelectValue placeholder="اختر الصف أولاً" /></SelectTrigger>
+              <SelectContent>{classes.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>نوع المخالفة</Label>
-            <Select value={form.type_id} onValueChange={(v) => setForm({ ...form, type_id: v })}>
-              <SelectTrigger><SelectValue placeholder="اختر النوع" /></SelectTrigger>
-              <SelectContent>{types.map((t) => <SelectItem key={t.id} value={t.id}>{t.name} ({t.severity})</SelectItem>)}</SelectContent>
+            <Label>الطالب *</Label>
+            <Select value={form.student_id} onValueChange={(v) => setForm({ ...form, student_id: v })} disabled={!form.class_id}>
+              <SelectTrigger><SelectValue placeholder={form.class_id ? (classStudents.length ? "اختر الطالب" : "لا يوجد طلاب في هذا الصف") : "اختر الصف أولاً"} /></SelectTrigger>
+              <SelectContent>{classStudents.map((s) => <SelectItem key={s.id} value={s.id}>{s.full_name}</SelectItem>)}</SelectContent>
             </Select>
           </div>
-          <div className="space-y-2"><Label>التاريخ</Label><Input type="date" value={form.violation_date} onChange={(e) => setForm({ ...form, violation_date: e.target.value })} /></div>
-          <div className="space-y-2"><Label>الوصف</Label><Textarea rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
-          <div className="space-y-2"><Label>الإجراء المتخذ</Label><Input value={form.action_taken} onChange={(e) => setForm({ ...form, action_taken: e.target.value })} /></div>
+          <div className="space-y-2">
+            <Label>نوع المخالفة *</Label>
+            <Select value={form.type_id} onValueChange={(v) => setForm({ ...form, type_id: v })}>
+              <SelectTrigger><SelectValue placeholder="اختر النوع" /></SelectTrigger>
+              <SelectContent>{types.map((t) => <SelectItem key={t.id} value={t.id}>{t.name} — الدرجة {t.severity}</SelectItem>)}</SelectContent>
+            </Select>
+            {selectedType && (
+              <Badge variant="outline" className={severityColor[selectedType.severity] || ""}>
+                الدرجة {selectedType.severity}
+              </Badge>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>الحصة</Label>
+              <Select value={form.period} onValueChange={(v) => setForm({ ...form, period: v })}>
+                <SelectTrigger><SelectValue placeholder="اختر الحصة" /></SelectTrigger>
+                <SelectContent>{[1,2,3,4,5,6,7].map((n) => <SelectItem key={n} value={String(n)}>الحصة {n}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>التاريخ</Label>
+              <Input type="date" value={form.violation_date} onChange={(e) => setForm({ ...form, violation_date: e.target.value })} />
+            </div>
+          </div>
+          <div className="space-y-2"><Label>ملاحظات</Label><Textarea rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
         </div>
-        <DialogFooter><Button onClick={() => add.mutate()} disabled={!form.student_id || add.isPending}>حفظ</Button></DialogFooter>
+        <DialogFooter>
+          <Button onClick={() => add.mutate()} disabled={!form.student_id || !form.type_id || add.isPending}>حفظ</Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
@@ -177,42 +224,72 @@ function AddViolationDialog({ students, types }: { students: any[]; types: any[]
 function ManageTypesDialog({ types }: { types: any[] }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
-  const [severity, setSeverity] = useState("متوسطة");
+  const [severity, setSeverity] = useState<typeof DEGREES[number]>("الأولى");
+  const [bulk, setBulk] = useState("");
+  const [bulkSeverity, setBulkSeverity] = useState<typeof DEGREES[number]>("الأولى");
   const qc = useQueryClient();
+
   const add = useMutation({
     mutationFn: async () => { const { error } = await supabase.from("violation_types").insert({ name, severity }); if (error) throw error; },
     onSuccess: () => { toast.success("تمت الإضافة"); qc.invalidateQueries({ queryKey: ["violation_types"] }); setName(""); },
     onError: (e: any) => toast.error(e.message),
   });
+
+  const addBulk = useMutation({
+    mutationFn: async () => {
+      const names = bulk.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+      if (!names.length) throw new Error("لا توجد أسماء");
+      const rows = names.map((n) => ({ name: n, severity: bulkSeverity }));
+      const { error } = await supabase.from("violation_types").insert(rows);
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("تمت الإضافة"); qc.invalidateQueries({ queryKey: ["violation_types"] }); setBulk(""); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const del = useMutation({
     mutationFn: async (id: string) => { const { error } = await supabase.from("violation_types").delete().eq("id", id); if (error) throw error; },
     onSuccess: () => { toast.success("تم الحذف"); qc.invalidateQueries({ queryKey: ["violation_types"] }); },
     onError: (e: any) => toast.error(e.message),
   });
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild><Button variant="outline"><Settings className="w-4 h-4 ml-1" /> أنواع المخالفات</Button></DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-w-xl">
         <DialogHeader><DialogTitle>إدارة أنواع المخالفات</DialogTitle></DialogHeader>
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div className="flex gap-2">
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="اسم المخالفة" />
-            <Select value={severity} onValueChange={setSeverity}>
+            <Select value={severity} onValueChange={(v) => setSeverity(v as typeof DEGREES[number])}>
               <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="خفيفة">خفيفة</SelectItem>
-                <SelectItem value="متوسطة">متوسطة</SelectItem>
-                <SelectItem value="شديدة">شديدة</SelectItem>
+                {DEGREES.map((d) => <SelectItem key={d} value={d}>الدرجة {d}</SelectItem>)}
               </SelectContent>
             </Select>
-            <Button onClick={() => add.mutate()} disabled={!name}><Plus className="w-4 h-4" /></Button>
+            <Button onClick={() => add.mutate()} disabled={!name || add.isPending}><Plus className="w-4 h-4" /></Button>
           </div>
-          <div className="space-y-2 max-h-72 overflow-y-auto">
+
+          <div className="border-t pt-3 space-y-2">
+            <Label className="text-xs text-muted-foreground">إضافة بالقص واللصق (نوع في كل سطر) — كلها بنفس الدرجة</Label>
+            <Textarea rows={4} value={bulk} onChange={(e) => setBulk(e.target.value)} placeholder={"التأخر عن الطابور\nعدم إحضار الكتب\n..."} />
+            <div className="flex gap-2">
+              <Select value={bulkSeverity} onValueChange={(v) => setBulkSeverity(v as typeof DEGREES[number])}>
+                <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {DEGREES.map((d) => <SelectItem key={d} value={d}>الدرجة {d}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Button onClick={() => addBulk.mutate()} disabled={!bulk.trim() || addBulk.isPending}>إضافة الكل</Button>
+            </div>
+          </div>
+
+          <div className="space-y-2 max-h-72 overflow-y-auto border-t pt-3">
             {types.map((t) => (
               <div key={t.id} className="flex items-center justify-between p-2 rounded border">
                 <div className="flex items-center gap-2">
                   <span className="font-medium">{t.name}</span>
-                  <Badge variant="outline" className={severityColor[t.severity] || ""}>{t.severity}</Badge>
+                  <Badge variant="outline" className={severityColor[t.severity] || ""}>الدرجة {t.severity}</Badge>
                 </div>
                 <Button size="icon" variant="ghost" onClick={() => { if (confirm("حذف؟")) del.mutate(t.id); }}>
                   <Trash2 className="w-4 h-4 text-destructive" />

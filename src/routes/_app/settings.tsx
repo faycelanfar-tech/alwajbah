@@ -63,7 +63,12 @@ function SettingsPage() {
       <Card className="border-0 shadow-card">
         <CardHeader><CardTitle>هوية المدرسة</CardTitle></CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2"><Label>اسم المدرسة</Label><Input value={form.school_name} onChange={(e) => setForm({ ...form, school_name: e.target.value })} /></div>
+          {!form.school_name?.trim() && (
+            <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+              لم يتم تعيين اسم المدرسة بعد. أضِف اسم مدرستك وشعارها ليظهرا في كل الصفحات والتقارير.
+            </div>
+          )}
+          <div className="space-y-2"><Label>اسم المدرسة *</Label><Input value={form.school_name} onChange={(e) => setForm({ ...form, school_name: e.target.value })} placeholder="مثال: مدرسة النور الابتدائية" /></div>
           <div className="space-y-2"><Label>العنوان الفرعي</Label><Input value={form.subtitle || ""} onChange={(e) => setForm({ ...form, subtitle: e.target.value })} /></div>
           <div className="space-y-2"><Label>نص التذييل</Label><Input value={form.footer_text || ""} onChange={(e) => setForm({ ...form, footer_text: e.target.value })} /></div>
 
