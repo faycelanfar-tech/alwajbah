@@ -131,23 +131,6 @@ function ViolationsPage() {
                 </div>
               );
             })}
-                      <p className="mt-2 text-sm font-medium text-primary">{v.violation_types?.name || "—"}</p>
-                      {v.description && <p className="mt-1 text-sm text-muted-foreground">{v.description}</p>}
-                      {v.action_taken && <p className="mt-1 text-sm"><span className="text-muted-foreground">الإجراء:</span> {v.action_taken}</p>}
-                      <div className="mt-2 text-xs text-muted-foreground flex gap-3 flex-wrap">
-                        <span>📅 {v.violation_date}</span>
-                        <span>👤 {v.profiles?.full_name || v.profiles?.username || "—"}</span>
-                      </div>
-                    </div>
-                    {canDelete && (
-                      <Button size="icon" variant="ghost" onClick={() => { if (confirm("حذف المخالفة؟")) del.mutate(v.id); }}>
-                        <Trash2 className="w-4 h-4 text-destructive" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
           </div>
         </CardContent>
       </Card>
