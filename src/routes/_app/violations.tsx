@@ -316,3 +316,78 @@ function ManageTypesDialog({ types }: { types: any[] }) {
     </Dialog>
   );
 }
+
+const ACTION_PRESETS = [
+  "تنبيه شفهي",
+  "تنبيه كتابي",
+  "إبلاغ ولي الأمر",
+  "استدعاء ولي الأمر",
+  "إحالة للمرشد الطلابي",
+  "إحالة للإدارة",
+  "حسم من درجات السلوك",
+];
+
+function ActionTakenDialog({ violation }: { violation: any }) {
+  const [open, setOpen] = useState(false);
+  const [action, setAction] = useState(violation.action_taken || "");
+  const qc = useQueryClient();
+
+  const save = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("violations")
+        .update({ action_taken: action || null })
+        .eq("id", violation.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("تم حفظ الإجراء");
+      qc.invalidateQueries({ queryKey: ["violations"] });
+      setOpen(false);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (o) setAction(violation.action_taken || ""); }}>
+      <DialogTrigger asChild>
+        <Button size="icon" variant="ghost" title="الإجراء المتخذ">
+          <ClipboardEdit className="w-4 h-4 text-primary" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>الإجراء المتخذ — {violation.students?.full_name}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="text-sm text-muted-foreground">
+            {violation.violation_types?.name}
+            {violation.violation_types?.severity && ` — الدرجة ${violation.violation_types.severity}`}
+          </div>
+          <div className="space-y-2">
+            <Label>اختيار سريع</Label>
+            <div className="flex flex-wrap gap-1">
+              {ACTION_PRESETS.map((p) => (
+                <Button key={p} type="button" size="sm" variant="outline" onClick={() => setAction(action ? `${action} • ${p}` : p)}>
+                  {p}
+                </Button>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>تفاصيل الإجراء</Label>
+            <Textarea rows={4} value={action} onChange={(e) => setAction(e.target.value)} placeholder="اكتب الإجراء المتخذ..." />
+          </div>
+        </div>
+        <DialogFooter className="gap-2">
+          {violation.action_taken && (
+            <Button variant="outline" onClick={() => { setAction(""); save.mutate(); }} disabled={save.isPending}>
+              إلغاء الإجراء
+            </Button>
+          )}
+          <Button onClick={() => save.mutate()} disabled={save.isPending}>حفظ</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
