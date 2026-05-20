@@ -85,6 +85,7 @@ function ViolationsPage() {
           <div className="space-y-3">
             {filtered.length === 0 && <p className="text-center text-muted-foreground py-8">لا توجد مخالفات</p>}
             {filtered.map((v: any) => {
+              const canEdit = isAdmin || v.created_by === user?.id;
               const canDelete = isAdmin || v.created_by === user?.id;
               return (
                 <div key={v.id} className="p-4 rounded-lg border bg-card hover:shadow-card transition-shadow">
@@ -99,7 +100,37 @@ function ViolationsPage() {
                           </Badge>
                         )}
                         {v.period && <Badge variant="outline">الحصة {v.period}</Badge>}
+                        {v.action_taken ? (
+                          <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200" variant="outline">✓ تم اتخاذ إجراء</Badge>
+                        ) : (
+                          <Badge className="bg-amber-100 text-amber-700 border-amber-200" variant="outline">بانتظار إجراء</Badge>
+                        )}
                       </div>
+                      <p className="mt-2 text-sm font-medium text-primary">{v.violation_types?.name || "—"}</p>
+                      {v.description && <p className="mt-1 text-sm text-muted-foreground">{v.description}</p>}
+                      {v.action_taken && (
+                        <div className="mt-2 p-2 rounded bg-emerald-50 border border-emerald-200 text-sm">
+                          <span className="text-emerald-700 font-medium">الإجراء المتخذ: </span>
+                          <span>{v.action_taken}</span>
+                        </div>
+                      )}
+                      <div className="mt-2 text-xs text-muted-foreground flex gap-3 flex-wrap">
+                        <span>📅 {v.violation_date}</span>
+                        <span>👤 {v.profiles?.full_name || v.profiles?.username || "—"}</span>
+                      </div>
+                    </div>
+                    <div className="flex gap-1">
+                      {canEdit && <ActionTakenDialog violation={v} />}
+                      {canDelete && (
+                        <Button size="icon" variant="ghost" onClick={() => { if (confirm("حذف المخالفة؟")) del.mutate(v.id); }}>
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
                       <p className="mt-2 text-sm font-medium text-primary">{v.violation_types?.name || "—"}</p>
                       {v.description && <p className="mt-1 text-sm text-muted-foreground">{v.description}</p>}
                       {v.action_taken && <p className="mt-1 text-sm"><span className="text-muted-foreground">الإجراء:</span> {v.action_taken}</p>}
