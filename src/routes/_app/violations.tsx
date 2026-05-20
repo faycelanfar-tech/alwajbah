@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Search, Settings } from "lucide-react";
+import { Plus, Trash2, Search, Settings, ClipboardEdit } from "lucide-react";
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
 
@@ -85,6 +85,7 @@ function ViolationsPage() {
           <div className="space-y-3">
             {filtered.length === 0 && <p className="text-center text-muted-foreground py-8">لا توجد مخالفات</p>}
             {filtered.map((v: any) => {
+              const canEdit = isAdmin || v.created_by === user?.id;
               const canDelete = isAdmin || v.created_by === user?.id;
               return (
                 <div key={v.id} className="p-4 rounded-lg border bg-card hover:shadow-card transition-shadow">
@@ -99,20 +100,33 @@ function ViolationsPage() {
                           </Badge>
                         )}
                         {v.period && <Badge variant="outline">الحصة {v.period}</Badge>}
+                        {v.action_taken ? (
+                          <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200" variant="outline">✓ تم اتخاذ إجراء</Badge>
+                        ) : (
+                          <Badge className="bg-amber-100 text-amber-700 border-amber-200" variant="outline">بانتظار إجراء</Badge>
+                        )}
                       </div>
                       <p className="mt-2 text-sm font-medium text-primary">{v.violation_types?.name || "—"}</p>
                       {v.description && <p className="mt-1 text-sm text-muted-foreground">{v.description}</p>}
-                      {v.action_taken && <p className="mt-1 text-sm"><span className="text-muted-foreground">الإجراء:</span> {v.action_taken}</p>}
+                      {v.action_taken && (
+                        <div className="mt-2 p-2 rounded bg-emerald-50 border border-emerald-200 text-sm">
+                          <span className="text-emerald-700 font-medium">الإجراء المتخذ: </span>
+                          <span>{v.action_taken}</span>
+                        </div>
+                      )}
                       <div className="mt-2 text-xs text-muted-foreground flex gap-3 flex-wrap">
                         <span>📅 {v.violation_date}</span>
                         <span>👤 {v.profiles?.full_name || v.profiles?.username || "—"}</span>
                       </div>
                     </div>
-                    {canDelete && (
-                      <Button size="icon" variant="ghost" onClick={() => { if (confirm("حذف المخالفة؟")) del.mutate(v.id); }}>
-                        <Trash2 className="w-4 h-4 text-destructive" />
-                      </Button>
-                    )}
+                    <div className="flex gap-1">
+                      {canEdit && <ActionTakenDialog violation={v} />}
+                      {canDelete && (
+                        <Button size="icon" variant="ghost" onClick={() => { if (confirm("حذف المخالفة؟")) del.mutate(v.id); }}>
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
@@ -298,6 +312,81 @@ function ManageTypesDialog({ types }: { types: any[] }) {
             ))}
           </div>
         </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+const ACTION_PRESETS = [
+  "تنبيه شفهي",
+  "تنبيه كتابي",
+  "إبلاغ ولي الأمر",
+  "استدعاء ولي الأمر",
+  "إحالة للمرشد الطلابي",
+  "إحالة للإدارة",
+  "حسم من درجات السلوك",
+];
+
+function ActionTakenDialog({ violation }: { violation: any }) {
+  const [open, setOpen] = useState(false);
+  const [action, setAction] = useState(violation.action_taken || "");
+  const qc = useQueryClient();
+
+  const save = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("violations")
+        .update({ action_taken: action || null })
+        .eq("id", violation.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("تم حفظ الإجراء");
+      qc.invalidateQueries({ queryKey: ["violations"] });
+      setOpen(false);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (o) setAction(violation.action_taken || ""); }}>
+      <DialogTrigger asChild>
+        <Button size="icon" variant="ghost" title="الإجراء المتخذ">
+          <ClipboardEdit className="w-4 h-4 text-primary" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>الإجراء المتخذ — {violation.students?.full_name}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="text-sm text-muted-foreground">
+            {violation.violation_types?.name}
+            {violation.violation_types?.severity && ` — الدرجة ${violation.violation_types.severity}`}
+          </div>
+          <div className="space-y-2">
+            <Label>اختيار سريع</Label>
+            <div className="flex flex-wrap gap-1">
+              {ACTION_PRESETS.map((p) => (
+                <Button key={p} type="button" size="sm" variant="outline" onClick={() => setAction(action ? `${action} • ${p}` : p)}>
+                  {p}
+                </Button>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>تفاصيل الإجراء</Label>
+            <Textarea rows={4} value={action} onChange={(e) => setAction(e.target.value)} placeholder="اكتب الإجراء المتخذ..." />
+          </div>
+        </div>
+        <DialogFooter className="gap-2">
+          {violation.action_taken && (
+            <Button variant="outline" onClick={() => { setAction(""); save.mutate(); }} disabled={save.isPending}>
+              إلغاء الإجراء
+            </Button>
+          )}
+          <Button onClick={() => save.mutate()} disabled={save.isPending}>حفظ</Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
