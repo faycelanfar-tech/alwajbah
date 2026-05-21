@@ -120,6 +120,7 @@ function ViolationsPage() {
                       </div>
                     </div>
                     <div className="flex gap-1">
+                      <HistoryDialog violation={v} />
                       {canEdit && <ActionTakenDialog violation={v} />}
                       {canDelete && (
                         <Button size="icon" variant="ghost" onClick={() => { if (confirm("حذف المخالفة؟")) del.mutate(v.id); }}>
