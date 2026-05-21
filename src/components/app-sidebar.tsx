@@ -1,12 +1,13 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { useSettings } from "@/hooks/use-settings";
-import { LayoutDashboard, Users, GraduationCap, AlertTriangle, FileBarChart, Settings as SettingsIcon, LogOut, UserCog, School } from "lucide-react";
+import { LayoutDashboard, Users, GraduationCap, AlertTriangle, FileBarChart, Settings as SettingsIcon, LogOut, UserCog, School, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const nav: { to: string; label: string; icon: typeof LayoutDashboard; roles: string[] }[] = [
   { to: "/dashboard", label: "الرئيسية", icon: LayoutDashboard, roles: ["admin", "teacher"] },
   { to: "/violations", label: "المخالفات", icon: AlertTriangle, roles: ["admin", "teacher"] },
+  { to: "/rewards", label: "النقاط والمكافآت", icon: Trophy, roles: ["admin", "teacher"] },
   { to: "/students", label: "الطلاب", icon: GraduationCap, roles: ["admin", "teacher"] },
   { to: "/classes", label: "الفصول", icon: Users, roles: ["admin"] },
   { to: "/teachers", label: "المعلمون", icon: UserCog, roles: ["admin"] },

@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Search, Settings, ClipboardEdit } from "lucide-react";
+import { Plus, Trash2, Search, Settings, ClipboardEdit, History } from "lucide-react";
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
 
@@ -120,6 +120,7 @@ function ViolationsPage() {
                       </div>
                     </div>
                     <div className="flex gap-1">
+                      <HistoryDialog violation={v} />
                       {canEdit && <ActionTakenDialog violation={v} />}
                       {canDelete && (
                         <Button size="icon" variant="ghost" onClick={() => { if (confirm("حذف المخالفة؟")) del.mutate(v.id); }}>
@@ -387,6 +388,72 @@ function ActionTakenDialog({ violation }: { violation: any }) {
           )}
           <Button onClick={() => save.mutate()} disabled={save.isPending}>حفظ</Button>
         </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+const ACTION_LABEL: Record<string, string> = {
+  created: "تم إنشاء المخالفة",
+  updated: "تم تعديل البيانات",
+  action_set: "تم تسجيل/تحديث الإجراء",
+  action_cleared: "تم إلغاء الإجراء",
+};
+
+function HistoryDialog({ violation }: { violation: any }) {
+  const [open, setOpen] = useState(false);
+  const { data: entries = [], isLoading } = useQuery({
+    queryKey: ["violation_history", violation.id],
+    queryFn: async () =>
+      (await supabase
+        .from("violation_history")
+        .select("*")
+        .eq("violation_id", violation.id)
+        .order("created_at", { ascending: false })).data ?? [],
+    enabled: open,
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="icon" variant="ghost" title="سجل التغييرات">
+          <History className="w-4 h-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>سجل التغييرات — {violation.students?.full_name}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 max-h-96 overflow-y-auto">
+          {isLoading && <p className="text-sm text-muted-foreground text-center py-4">جارٍ التحميل...</p>}
+          {!isLoading && entries.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-4">لا توجد سجلات</p>
+          )}
+          {entries.map((e: any) => {
+            const oldAct = e.old_data?.action_taken;
+            const newAct = e.new_data?.action_taken;
+            return (
+              <div key={e.id} className="border-r-2 border-primary/40 pr-3 pb-2">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <Badge variant="outline">{ACTION_LABEL[e.action] || e.action}</Badge>
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(e.created_at).toLocaleString("ar-EG")}
+                  </span>
+                </div>
+                <p className="text-sm mt-1">👤 {e.changed_by_name || "—"}</p>
+                {e.action === "action_set" && (
+                  <div className="mt-1 text-sm space-y-1">
+                    {oldAct && <p className="text-muted-foreground line-through">{oldAct}</p>}
+                    <p className="text-emerald-700">{newAct}</p>
+                  </div>
+                )}
+                {e.action === "action_cleared" && oldAct && (
+                  <p className="mt-1 text-sm text-muted-foreground line-through">{oldAct}</p>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </DialogContent>
     </Dialog>
   );

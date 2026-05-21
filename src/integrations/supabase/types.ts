@@ -44,6 +44,38 @@ export type Database = {
         }
         Relationships: []
       }
+      class_weekly_points: {
+        Row: {
+          class_id: string
+          id: string
+          points: number
+          updated_at: string
+          week_start: string
+        }
+        Insert: {
+          class_id: string
+          id?: string
+          points?: number
+          updated_at?: string
+          week_start: string
+        }
+        Update: {
+          class_id?: string
+          id?: string
+          points?: number
+          updated_at?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_weekly_points_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       classes: {
         Row: {
           created_at: string
@@ -64,6 +96,54 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      point_transactions: {
+        Row: {
+          class_id: string | null
+          created_at: string
+          created_by: string | null
+          delta: number
+          id: string
+          kind: string
+          reason: string | null
+          student_id: string | null
+        }
+        Insert: {
+          class_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          delta: number
+          id?: string
+          kind?: string
+          reason?: string | null
+          student_id?: string | null
+        }
+        Update: {
+          class_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          delta?: number
+          id?: string
+          kind?: string
+          reason?: string | null
+          student_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "point_transactions_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "point_transactions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -88,6 +168,32 @@ export type Database = {
           username?: string
         }
         Relationships: []
+      }
+      student_points: {
+        Row: {
+          points: number
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          points?: number
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          points?: number
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_points_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: true
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       students: {
         Row: {
@@ -147,6 +253,47 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      violation_history: {
+        Row: {
+          action: string
+          changed_by: string | null
+          changed_by_name: string | null
+          created_at: string
+          id: string
+          new_data: Json | null
+          old_data: Json | null
+          violation_id: string
+        }
+        Insert: {
+          action: string
+          changed_by?: string | null
+          changed_by_name?: string | null
+          created_at?: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          violation_id: string
+        }
+        Update: {
+          action?: string
+          changed_by?: string | null
+          changed_by_name?: string | null
+          created_at?: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          violation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "violation_history_violation_id_fkey"
+            columns: ["violation_id"]
+            isOneToOne: false
+            referencedRelation: "violations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       violation_types: {
         Row: {

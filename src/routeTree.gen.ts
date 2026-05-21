@@ -18,6 +18,7 @@ import { Route as AppViolationsRouteImport } from './routes/_app/violations'
 import { Route as AppTeachersRouteImport } from './routes/_app/teachers'
 import { Route as AppStudentsRouteImport } from './routes/_app/students'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
+import { Route as AppRewardsRouteImport } from './routes/_app/rewards'
 import { Route as AppReportsRouteImport } from './routes/_app/reports'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as AppClassesRouteImport } from './routes/_app/classes'
@@ -66,6 +67,11 @@ const AppSettingsRoute = AppSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AppRoute,
 } as any)
+const AppRewardsRoute = AppRewardsRouteImport.update({
+  id: '/rewards',
+  path: '/rewards',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppReportsRoute = AppReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
@@ -90,6 +96,7 @@ export interface FileRoutesByFullPath {
   '/classes': typeof AppClassesRoute
   '/dashboard': typeof AppDashboardRoute
   '/reports': typeof AppReportsRoute
+  '/rewards': typeof AppRewardsRoute
   '/settings': typeof AppSettingsRoute
   '/students': typeof AppStudentsRoute
   '/teachers': typeof AppTeachersRoute
@@ -103,6 +110,7 @@ export interface FileRoutesByTo {
   '/classes': typeof AppClassesRoute
   '/dashboard': typeof AppDashboardRoute
   '/reports': typeof AppReportsRoute
+  '/rewards': typeof AppRewardsRoute
   '/settings': typeof AppSettingsRoute
   '/students': typeof AppStudentsRoute
   '/teachers': typeof AppTeachersRoute
@@ -118,6 +126,7 @@ export interface FileRoutesById {
   '/_app/classes': typeof AppClassesRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/reports': typeof AppReportsRoute
+  '/_app/rewards': typeof AppRewardsRoute
   '/_app/settings': typeof AppSettingsRoute
   '/_app/students': typeof AppStudentsRoute
   '/_app/teachers': typeof AppTeachersRoute
@@ -133,6 +142,7 @@ export interface FileRouteTypes {
     | '/classes'
     | '/dashboard'
     | '/reports'
+    | '/rewards'
     | '/settings'
     | '/students'
     | '/teachers'
@@ -146,6 +156,7 @@ export interface FileRouteTypes {
     | '/classes'
     | '/dashboard'
     | '/reports'
+    | '/rewards'
     | '/settings'
     | '/students'
     | '/teachers'
@@ -160,6 +171,7 @@ export interface FileRouteTypes {
     | '/_app/classes'
     | '/_app/dashboard'
     | '/_app/reports'
+    | '/_app/rewards'
     | '/_app/settings'
     | '/_app/students'
     | '/_app/teachers'
@@ -239,6 +251,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/rewards': {
+      id: '/_app/rewards'
+      path: '/rewards'
+      fullPath: '/rewards'
+      preLoaderRoute: typeof AppRewardsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/reports': {
       id: '/_app/reports'
       path: '/reports'
@@ -267,6 +286,7 @@ interface AppRouteChildren {
   AppClassesRoute: typeof AppClassesRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppReportsRoute: typeof AppReportsRoute
+  AppRewardsRoute: typeof AppRewardsRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppStudentsRoute: typeof AppStudentsRoute
   AppTeachersRoute: typeof AppTeachersRoute
@@ -277,6 +297,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppClassesRoute: AppClassesRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppReportsRoute: AppReportsRoute,
+  AppRewardsRoute: AppRewardsRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppStudentsRoute: AppStudentsRoute,
   AppTeachersRoute: AppTeachersRoute,
