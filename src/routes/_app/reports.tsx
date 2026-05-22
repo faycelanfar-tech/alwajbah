@@ -211,7 +211,45 @@ function ReportsPage() {
         </Card>
       </div>
 
-      <Card className="border-0 shadow-card">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <MetricCard label="إجمالي المخالفات" value={violations.length} tone="primary" />
+        <MetricCard label="تم اتخاذ إجراء" value={actionsDone} tone="emerald" />
+        <MetricCard label="بانتظار إجراء" value={actionsPending} tone="amber" />
+        <MetricCard label="عدد الطلاب المخالفين" value={byStudent.length} tone="rose" />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <RankCard
+          title="🏆 الأفضل سلوكاً (الأقل مخالفات)"
+          rows={[...byStudent].reverse().slice(0, 10).map((s, i) => ({ rank: i + 1, primary: s.name, secondary: s.klass, value: s.count, suffix: "مخالفة" }))}
+          empty="لا توجد بيانات"
+          good
+        />
+        <RankCard
+          title="⚠️ الأكثر مخالفات (الطلاب)"
+          rows={byStudent.slice(0, 10).map((s, i) => ({ rank: i + 1, primary: s.name, secondary: s.klass, value: s.count, suffix: "مخالفة" }))}
+          empty="لا توجد بيانات"
+        />
+        <RankCard
+          title="🥇 الصف الأفضل (الأقل مخالفات)"
+          rows={[...classRanking].reverse().slice(0, 10).map((c, i) => ({ rank: i + 1, primary: c.name, value: c.count, suffix: "مخالفة" }))}
+          empty="لا توجد بيانات"
+          good
+        />
+        <RankCard
+          title="📉 الصف الأكثر مخالفات"
+          rows={classRanking.slice(0, 10).map((c, i) => ({ rank: i + 1, primary: c.name, value: c.count, suffix: "مخالفة" }))}
+          empty="لا توجد بيانات"
+        />
+        <RankCard
+          title="🔁 المخالفات الأكثر ارتكاباً"
+          rows={typeRanking.slice(0, 10).map((t, i) => ({ rank: i + 1, primary: t.name, value: t.value, suffix: "مرة" }))}
+          empty="لا توجد بيانات"
+          className="lg:col-span-2"
+        />
+      </div>
+
+
         <CardHeader><CardTitle>التفاصيل ({violations.length})</CardTitle></CardHeader>
         <CardContent>
           <div className="rounded-lg border overflow-x-auto">
