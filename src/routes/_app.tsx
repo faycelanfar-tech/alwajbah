@@ -27,7 +27,7 @@ function AppLayout() {
           <Outlet />
         </div>
         <footer className="text-center text-xs text-muted-foreground py-6 border-t mt-8">
-          {settings.footer_text}
+          تطوير: فيصل أحمد عنفار
         </footer>
       </main>
       <MobileBar />

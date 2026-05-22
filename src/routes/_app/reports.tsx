@@ -71,6 +71,23 @@ function ReportsPage() {
     return Array.from(map, ([name, value]) => ({ name, value }));
   }, [violations]);
 
+  const byStudent = useMemo(() => {
+    const map = new Map<string, { name: string; klass: string; count: number }>();
+    violations.forEach((v: any) => {
+      const id = v.student_id;
+      if (!id) return;
+      const cur = map.get(id) || { name: v.students?.full_name || "—", klass: v.students?.classes?.name || "—", count: 0 };
+      cur.count++;
+      map.set(id, cur);
+    });
+    return Array.from(map.values()).sort((a, b) => b.count - a.count);
+  }, [violations]);
+
+  const classRanking = useMemo(() => [...byClass].sort((a, b) => b.count - a.count), [byClass]);
+  const typeRanking = useMemo(() => [...byType].sort((a, b) => b.value - a.value), [byType]);
+  const actionsDone = useMemo(() => violations.filter((v: any) => v.action_taken).length, [violations]);
+  const actionsPending = violations.length - actionsDone;
+
   function exportExcel() {
     const rows = violations.map((v: any, i: number) => ({
       "م": i + 1,
@@ -116,7 +133,7 @@ function ReportsPage() {
           new Paragraph({ text: "" }),
           new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [headRow, ...bodyRows] }),
           new Paragraph({ text: "" }),
-          new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: settings.footer_text || "", italics: true })] }),
+          new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "تطوير: فيصل أحمد عنفار", italics: true })] }),
         ],
       }],
     });
@@ -194,6 +211,44 @@ function ReportsPage() {
         </Card>
       </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <MetricCard label="إجمالي المخالفات" value={violations.length} tone="primary" />
+        <MetricCard label="تم اتخاذ إجراء" value={actionsDone} tone="emerald" />
+        <MetricCard label="بانتظار إجراء" value={actionsPending} tone="amber" />
+        <MetricCard label="عدد الطلاب المخالفين" value={byStudent.length} tone="rose" />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <RankCard
+          title="🏆 الأفضل سلوكاً (الأقل مخالفات)"
+          rows={[...byStudent].reverse().slice(0, 10).map((s, i) => ({ rank: i + 1, primary: s.name, secondary: s.klass, value: s.count, suffix: "مخالفة" }))}
+          empty="لا توجد بيانات"
+          good
+        />
+        <RankCard
+          title="⚠️ الأكثر مخالفات (الطلاب)"
+          rows={byStudent.slice(0, 10).map((s, i) => ({ rank: i + 1, primary: s.name, secondary: s.klass, value: s.count, suffix: "مخالفة" }))}
+          empty="لا توجد بيانات"
+        />
+        <RankCard
+          title="🥇 الصف الأفضل (الأقل مخالفات)"
+          rows={[...classRanking].reverse().slice(0, 10).map((c, i) => ({ rank: i + 1, primary: c.name, value: c.count, suffix: "مخالفة" }))}
+          empty="لا توجد بيانات"
+          good
+        />
+        <RankCard
+          title="📉 الصف الأكثر مخالفات"
+          rows={classRanking.slice(0, 10).map((c, i) => ({ rank: i + 1, primary: c.name, value: c.count, suffix: "مخالفة" }))}
+          empty="لا توجد بيانات"
+        />
+        <RankCard
+          title="🔁 المخالفات الأكثر ارتكاباً"
+          rows={typeRanking.slice(0, 10).map((t, i) => ({ rank: i + 1, primary: t.name, value: t.value, suffix: "مرة" }))}
+          empty="لا توجد بيانات"
+          className="lg:col-span-2"
+        />
+      </div>
+
       <Card className="border-0 shadow-card">
         <CardHeader><CardTitle>التفاصيل ({violations.length})</CardTitle></CardHeader>
         <CardContent>
@@ -226,5 +281,47 @@ function ReportsPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function MetricCard({ label, value, tone }: { label: string; value: number; tone: "primary" | "emerald" | "amber" | "rose" }) {
+  const map = {
+    primary: "bg-primary/5 border-primary/20 text-primary",
+    emerald: "bg-emerald-50 border-emerald-200 text-emerald-700",
+    amber: "bg-amber-50 border-amber-200 text-amber-700",
+    rose: "bg-rose-50 border-rose-200 text-rose-700",
+  };
+  return (
+    <Card className={`border ${map[tone]}`}>
+      <CardContent className="p-4">
+        <p className="text-sm opacity-80">{label}</p>
+        <p className="text-3xl font-bold mt-1">{value}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function RankCard({ title, rows, empty, good, className }: { title: string; rows: { rank: number; primary: string; secondary?: string; value: number; suffix: string }[]; empty: string; good?: boolean; className?: string }) {
+  return (
+    <Card className={`border-0 shadow-card ${className || ""}`}>
+      <CardHeader><CardTitle className="text-base">{title}</CardTitle></CardHeader>
+      <CardContent>
+        {rows.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">{empty}</p>}
+        <div className="space-y-1">
+          {rows.map((r) => (
+            <div key={r.rank} className="flex items-center justify-between p-2 rounded hover:bg-secondary/50">
+              <div className="flex items-center gap-3 min-w-0">
+                <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${r.rank <= 3 ? (good ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700") : "bg-secondary text-muted-foreground"}`}>{r.rank}</span>
+                <div className="min-w-0">
+                  <p className="font-medium truncate">{r.primary}</p>
+                  {r.secondary && <p className="text-xs text-muted-foreground truncate">{r.secondary}</p>}
+                </div>
+              </div>
+              <span className="text-sm font-bold whitespace-nowrap">{r.value} {r.suffix}</span>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 }

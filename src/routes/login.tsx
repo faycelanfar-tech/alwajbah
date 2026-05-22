@@ -123,7 +123,7 @@ function LoginPage() {
           </CardContent>
         </Card>
 
-        <p className="text-center mt-6 text-white/70 text-sm">{settings.footer_text}</p>
+        <p className="text-center mt-6 text-white/70 text-sm">تطوير: فيصل أحمد عنفار</p>
       </div>
     </div>
   );
