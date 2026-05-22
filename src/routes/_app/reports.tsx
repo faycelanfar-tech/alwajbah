@@ -308,18 +308,24 @@ function RankCard({ title, rows, empty, good, className }: { title: string; rows
       <CardContent>
         {rows.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">{empty}</p>}
         <div className="space-y-1">
-          {rows.map((r) => (
-            <div key={r.rank} className="flex items-center justify-between p-2 rounded hover:bg-secondary/50">
-              <div className="flex items-center gap-3 min-w-0">
-                <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${r.rank <= 3 ? (good ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700") : "bg-secondary text-muted-foreground"}`}>{r.rank}</span>
-                <div className="min-w-0">
-                  <p className="font-medium truncate">{r.primary}</p>
-                  {r.secondary && <p className="text-xs text-muted-foreground truncate">{r.secondary}</p>}
+          {rows.map((r) => {
+            const top = r.rank <= 3;
+            const badgeClass = top
+              ? (good ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700")
+              : "bg-secondary text-muted-foreground";
+            return (
+              <div key={r.rank} className="flex items-center justify-between p-2 rounded hover:bg-secondary/50">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${badgeClass}`}>{r.rank}</span>
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">{r.primary}</p>
+                    {r.secondary && <p className="text-xs text-muted-foreground truncate">{r.secondary}</p>}
+                  </div>
                 </div>
+                <span className="text-sm font-bold whitespace-nowrap">{r.value} {r.suffix}</span>
               </div>
-              <span className="text-sm font-bold whitespace-nowrap">{r.value} {r.suffix}</span>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </CardContent>
     </Card>
