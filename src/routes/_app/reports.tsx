@@ -71,6 +71,23 @@ function ReportsPage() {
     return Array.from(map, ([name, value]) => ({ name, value }));
   }, [violations]);
 
+  const byStudent = useMemo(() => {
+    const map = new Map<string, { name: string; klass: string; count: number }>();
+    violations.forEach((v: any) => {
+      const id = v.student_id;
+      if (!id) return;
+      const cur = map.get(id) || { name: v.students?.full_name || "—", klass: v.students?.classes?.name || "—", count: 0 };
+      cur.count++;
+      map.set(id, cur);
+    });
+    return Array.from(map.values()).sort((a, b) => b.count - a.count);
+  }, [violations]);
+
+  const classRanking = useMemo(() => [...byClass].sort((a, b) => b.count - a.count), [byClass]);
+  const typeRanking = useMemo(() => [...byType].sort((a, b) => b.value - a.value), [byType]);
+  const actionsDone = useMemo(() => violations.filter((v: any) => v.action_taken).length, [violations]);
+  const actionsPending = violations.length - actionsDone;
+
   function exportExcel() {
     const rows = violations.map((v: any, i: number) => ({
       "م": i + 1,
