@@ -116,7 +116,7 @@ function ReportsPage() {
           new Paragraph({ text: "" }),
           new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [headRow, ...bodyRows] }),
           new Paragraph({ text: "" }),
-          new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: settings.footer_text || "", italics: true })] }),
+          new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "تطوير: فيصل أحمد عنفار", italics: true })] }),
         ],
       }],
     });

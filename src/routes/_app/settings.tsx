@@ -29,7 +29,6 @@ function SettingsPage() {
       const { error } = await supabase.from("app_settings").update({
         school_name: form.school_name,
         subtitle: form.subtitle,
-        footer_text: form.footer_text,
         logo_url: form.logo_url,
       }).eq("id", 1);
       if (error) throw error;
@@ -70,7 +69,6 @@ function SettingsPage() {
           )}
           <div className="space-y-2"><Label>اسم المدرسة *</Label><Input value={form.school_name} onChange={(e) => setForm({ ...form, school_name: e.target.value })} placeholder="مثال: مدرسة النور الابتدائية" /></div>
           <div className="space-y-2"><Label>العنوان الفرعي</Label><Input value={form.subtitle || ""} onChange={(e) => setForm({ ...form, subtitle: e.target.value })} /></div>
-          <div className="space-y-2"><Label>نص التذييل</Label><Input value={form.footer_text || ""} onChange={(e) => setForm({ ...form, footer_text: e.target.value })} /></div>
 
           <div className="space-y-2">
             <Label>شعار المدرسة</Label>
