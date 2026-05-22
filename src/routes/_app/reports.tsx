@@ -249,7 +249,7 @@ function ReportsPage() {
         />
       </div>
 
-
+      <Card className="border-0 shadow-card">
         <CardHeader><CardTitle>التفاصيل ({violations.length})</CardTitle></CardHeader>
         <CardContent>
           <div className="rounded-lg border overflow-x-auto">
