@@ -147,15 +147,72 @@ function ReportsPage() {
     saveAs(blob, `تقرير_المخالفات_${from}_${to}.docx`);
   }
 
+  function exportPDF() {
+    const school = settings.school_name?.trim() || "نظام إدارة المخالفات";
+    const sub = settings.subtitle || "";
+    const rows = violations.map((v: any, i: number) => `
+      <tr>
+        <td>${i + 1}</td><td>${v.violation_date}</td>
+        <td>${esc(v.students?.full_name || "")}</td>
+        <td>${esc(v.students?.classes?.name || "")}</td>
+        <td>${esc(v.violation_types?.name || "")}</td>
+        <td>${esc(v.violation_types?.severity || "")}</td>
+        <td>${esc(v.action_taken || "—")}</td>
+        <td>${esc(v.profiles?.full_name || v.profiles?.username || "")}</td>
+      </tr>`).join("");
+    const html = `<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8">
+      <title>تقرير المخالفات</title>
+      <style>
+        @page { size: A4; margin: 14mm; }
+        body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; color: #111; }
+        .header { text-align: center; border-bottom: 3px solid #1d4ed8; padding-bottom: 10px; margin-bottom: 14px; }
+        .header h1 { margin: 0; color: #1d4ed8; font-size: 22px; }
+        .header p { margin: 4px 0; color: #555; font-size: 13px; }
+        .meta { display: flex; justify-content: space-between; margin: 10px 0; font-size: 12px; color: #555; }
+        .stats { display: flex; gap: 8px; margin: 10px 0 16px; }
+        .stat { flex: 1; border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px; text-align: center; }
+        .stat b { display: block; font-size: 18px; color: #1d4ed8; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th, td { border: 1px solid #d1d5db; padding: 6px; text-align: right; }
+        th { background: #1d4ed8; color: #fff; }
+        tr:nth-child(even) td { background: #f9fafb; }
+        .footer { margin-top: 18px; text-align: center; font-size: 11px; color: #777; border-top: 1px solid #e5e7eb; padding-top: 8px; }
+      </style></head><body>
+      <div class="header">
+        <h1>${esc(school)}</h1>
+        ${sub ? `<p>${esc(sub)}</p>` : ""}
+        <p><b>تقرير المخالفات السلوكية</b> — من ${from} إلى ${to}</p>
+      </div>
+      <div class="stats">
+        <div class="stat"><b>${violations.length}</b>إجمالي المخالفات</div>
+        <div class="stat"><b>${actionsDone}</b>تم اتخاذ إجراء</div>
+        <div class="stat"><b>${actionsPending}</b>بانتظار إجراء</div>
+        <div class="stat"><b>${byStudent.length}</b>عدد الطلاب</div>
+      </div>
+      <table>
+        <thead><tr>
+          <th>م</th><th>التاريخ</th><th>الطالب</th><th>الفصل</th>
+          <th>نوع المخالفة</th><th>الشدة</th><th>الإجراء</th><th>المسجِّل</th>
+        </tr></thead>
+        <tbody>${rows || `<tr><td colspan="8" style="text-align:center;padding:20px">لا توجد بيانات</td></tr>`}</tbody>
+      </table>
+      <div class="footer">تطوير: فيصل أحمد عنفار — ${new Date().toLocaleDateString("ar-EG")}</div>
+      <script>window.onload = () => { window.print(); };</script>
+      </body></html>`;
+    const w = window.open("", "_blank");
+    if (!w) return;
+    w.document.open(); w.document.write(html); w.document.close();
+  }
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">التقارير والإحصائيات</h1>
-        <p className="text-muted-foreground mt-1">عرض وتصدير التقارير</p>
+        <p className="text-muted-foreground mt-1">عرض وتصدير التقارير — {settings.school_name}</p>
       </div>
 
       <Card className="border-0 shadow-card">
-        <CardContent className="p-5 grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+        <CardContent className="p-5 grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
           <div className="space-y-2"><Label>من تاريخ</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
           <div className="space-y-2"><Label>إلى تاريخ</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
           <div className="space-y-2">
@@ -169,9 +226,11 @@ function ReportsPage() {
             </Select>
           </div>
           <Button variant="outline" onClick={exportExcel}><FileDown className="w-4 h-4 ml-1" /> Excel</Button>
-          <Button onClick={exportWord}><FileText className="w-4 h-4 ml-1" /> Word</Button>
+          <Button variant="outline" onClick={exportWord}><FileText className="w-4 h-4 ml-1" /> Word</Button>
+          <Button onClick={exportPDF}><Printer className="w-4 h-4 ml-1" /> PDF</Button>
         </CardContent>
       </Card>
+
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card className="border-0 shadow-card">
