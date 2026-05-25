@@ -148,6 +148,8 @@ function ReportsPage() {
   }
 
   function exportPDF() {
+    const esc = (s: string) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
+
     const school = settings.school_name?.trim() || "نظام إدارة المخالفات";
     const sub = settings.subtitle || "";
     const rows = violations.map((v: any, i: number) => `
