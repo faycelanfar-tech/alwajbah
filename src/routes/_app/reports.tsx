@@ -34,15 +34,21 @@ function ReportsPage() {
   const { data: violations = [] } = useQuery({
     queryKey: ["violations-report", from, to, classId],
     queryFn: async () => {
-      let q = supabase.from("violations")
-        .select("*, students(full_name, classes(id, name)), violation_types(name, severity), profiles!violations_created_by_fkey(full_name, username)")
+      const { data } = await supabase.from("violations")
+        .select("*, students(full_name, classes(id, name)), violation_types(name, severity)")
         .gte("violation_date", from).lte("violation_date", to)
         .order("violation_date", { ascending: false });
-      const { data } = await q;
-      const list = data ?? [];
+      let list = data ?? [];
+      const ids = Array.from(new Set(list.map((v: any) => v.created_by).filter(Boolean)));
+      if (ids.length) {
+        const { data: profs } = await supabase.from("profiles").select("id, full_name, username").in("id", ids);
+        const map = new Map((profs ?? []).map((p: any) => [p.id, p]));
+        list.forEach((v: any) => { v.profiles = map.get(v.created_by) ?? null; });
+      }
       return classId === "all" ? list : list.filter((v: any) => v.students?.classes?.id === classId);
     },
   });
+
 
   const byType = useMemo(() => {
     const map = new Map<string, number>();
