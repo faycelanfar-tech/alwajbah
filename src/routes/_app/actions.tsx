@@ -26,7 +26,7 @@ const severityColor: Record<string, string> = {
 function ActionsPage() {
   const { role } = useAuth();
   const navigate = useNavigate();
-  useEffect(() => { if (role && role !== "admin") navigate({ to: "/dashboard" }); }, [role, navigate]);
+  useEffect(() => { if (role && role !== "admin" && role !== "supervisor") navigate({ to: "/dashboard" }); }, [role, navigate]);
 
   const { data: violations = [] } = useQuery({
     queryKey: ["violations-actions"],
