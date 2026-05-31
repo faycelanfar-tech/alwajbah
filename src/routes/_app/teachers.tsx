@@ -20,7 +20,7 @@ export const Route = createFileRoute("/_app/teachers")({ component: TeachersPage
 function TeachersPage() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ username: "", full_name: "", password: "", email: "" });
+  const [form, setForm] = useState({ username: "", full_name: "", password: "", email: "", role: "teacher" as "teacher" | "supervisor" | "admin" });
   const [resetUser, setResetUser] = useState<{ id: string; username: string } | null>(null);
   const [newPwd, setNewPwd] = useState("");
   const resetFn = useServerFn(adminResetUserPassword);
@@ -39,21 +39,43 @@ function TeachersPage() {
       const email = `${form.username.toLowerCase().trim()}@alwajbah.local`;
       const { data, error } = await supabase.auth.signUp({
         email, password: form.password,
-        options: { data: { username: form.username.toLowerCase().trim(), full_name: form.full_name } },
+        options: { data: { username: form.username.toLowerCase().trim(), full_name: form.full_name, role: form.role } },
       });
       if (error) throw error;
-      // Save real email on profile for password recovery
       if (form.email && data.user) {
         await supabase.from("profiles").update({ email: form.email.trim() }).eq("id", data.user.id);
       }
+      // Force-set role (handle_new_user defaults to teacher for non-first user)
+      if (data.user && form.role !== "teacher") {
+        await supabase.from("user_roles").upsert(
+          { user_id: data.user.id, role: form.role as any },
+          { onConflict: "user_id,role" }
+        );
+        // Remove default teacher role if it was assigned
+        await supabase.from("user_roles").delete().eq("user_id", data.user.id).eq("role", "teacher");
+      }
     },
     onSuccess: () => {
-      toast.success("تم إنشاء حساب المعلم");
+      toast.success("تم إنشاء الحساب بنجاح");
       qc.invalidateQueries({ queryKey: ["users"] });
-      setOpen(false); setForm({ username: "", full_name: "", password: "", email: "" });
+      setOpen(false); setForm({ username: "", full_name: "", password: "", email: "", role: "teacher" });
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const changeRole = useMutation({
+    mutationFn: async ({ userId, role }: { userId: string; role: string }) => {
+      await supabase.from("user_roles").delete().eq("user_id", userId);
+      const { error } = await supabase.from("user_roles").insert({ user_id: userId, role: role as any });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("تم تحديث الدور");
+      qc.invalidateQueries({ queryKey: ["users"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
 
   const doReset = useMutation({
     mutationFn: async () => {
