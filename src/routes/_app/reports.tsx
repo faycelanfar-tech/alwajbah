@@ -25,19 +25,29 @@ function ReportsPage() {
   const [from, setFrom] = useState(monthAgo);
   const [to, setTo] = useState(today);
   const [classId, setClassId] = useState<string>("all");
+  const [grade, setGrade] = useState<string>("all");
+  const [severity, setSeverity] = useState<string>("all");
+  const [typeId, setTypeId] = useState<string>("all");
 
   const { data: classes = [] } = useQuery({
     queryKey: ["classes"],
     queryFn: async () => (await supabase.from("classes").select("*").order("name")).data ?? [],
   });
+  const { data: vtypes = [] } = useQuery({
+    queryKey: ["violation_types"],
+    queryFn: async () => (await supabase.from("violation_types").select("*").order("name")).data ?? [],
+  });
+  const grades = useMemo(() => Array.from(new Set(classes.map((c: any) => c.grade).filter(Boolean))).sort() as string[], [classes]);
 
   const { data: violations = [] } = useQuery({
-    queryKey: ["violations-report", from, to, classId],
+    queryKey: ["violations-report", from, to, classId, grade, severity, typeId],
     queryFn: async () => {
-      const { data } = await supabase.from("violations")
-        .select("*, students(full_name, classes(id, name)), violation_types(name, severity)")
+      let q = supabase.from("violations")
+        .select("*, students(full_name, classes(id, name, grade)), violation_types(id, name, severity)")
         .gte("violation_date", from).lte("violation_date", to)
         .order("violation_date", { ascending: false });
+      if (typeId !== "all") q = q.eq("type_id", typeId);
+      const { data } = await q;
       let list = data ?? [];
       const ids = Array.from(new Set(list.map((v: any) => v.created_by).filter(Boolean)));
       if (ids.length) {
@@ -45,9 +55,13 @@ function ReportsPage() {
         const map = new Map((profs ?? []).map((p: any) => [p.id, p]));
         list.forEach((v: any) => { v.profiles = map.get(v.created_by) ?? null; });
       }
-      return classId === "all" ? list : list.filter((v: any) => v.students?.classes?.id === classId);
+      if (classId !== "all") list = list.filter((v: any) => v.students?.classes?.id === classId);
+      if (grade !== "all") list = list.filter((v: any) => v.students?.classes?.grade === grade);
+      if (severity !== "all") list = list.filter((v: any) => v.violation_types?.severity === severity);
+      return list;
     },
   });
+
 
 
   const byType = useMemo(() => {
