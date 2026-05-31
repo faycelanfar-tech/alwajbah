@@ -93,21 +93,32 @@ function TeachersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">المعلمون</h1>
-          <p className="text-muted-foreground mt-1">حسابات المستخدمين بالنظام</p>
+          <h1 className="text-3xl font-bold">المعلمون والحسابات</h1>
+          <p className="text-muted-foreground mt-1">إدارة حسابات المستخدمين وأدوارهم</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild><Button><Plus className="w-4 h-4 ml-1" /> إضافة معلم</Button></DialogTrigger>
+          <DialogTrigger asChild><Button><Plus className="w-4 h-4 ml-1" /> إضافة حساب</Button></DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle>إضافة حساب معلم</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>إضافة حساب جديد</DialogTitle></DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2"><Label>الاسم الكامل *</Label><Input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} /></div>
               <div className="space-y-2"><Label>اسم المستخدم *</Label><Input value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} placeholder="بالإنجليزية بدون مسافات" /></div>
-              <div className="space-y-2"><Label>البريد الإلكتروني (اختياري لاستعادة كلمة المرور)</Label><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="teacher@example.com" /></div>
+              <div className="space-y-2">
+                <Label>الدور *</Label>
+                <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v as any })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="teacher">معلم</SelectItem>
+                    <SelectItem value="supervisor">مشرف إداري</SelectItem>
+                    <SelectItem value="admin">مشرف عام (مدير النظام)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2"><Label>البريد الإلكتروني (اختياري)</Label><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="user@example.com" /></div>
               <div className="space-y-2"><Label>كلمة المرور *</Label><Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} minLength={6} /></div>
-              <p className="text-xs text-muted-foreground">⚠️ بعد الحفظ قد يتم تسجيل دخولك بحساب المعلم الجديد. سجّل خروج وادخل مرة أخرى بحسابك.</p>
+              <p className="text-xs text-muted-foreground">⚠️ بعد الحفظ قد يتم تسجيل دخولك بالحساب الجديد. سجّل خروج وادخل مرة أخرى بحسابك.</p>
             </div>
-            <DialogFooter><Button onClick={() => add.mutate()} disabled={!form.username || !form.password || !form.full_name}>إنشاء</Button></DialogFooter>
+            <DialogFooter><Button onClick={() => add.mutate()} disabled={!form.username || !form.password || !form.full_name || add.isPending}>إنشاء</Button></DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
@@ -125,17 +136,28 @@ function TeachersPage() {
                   <p className="text-sm text-muted-foreground truncate">@{u.username}</p>
                   {u.email && <p className="text-xs text-muted-foreground truncate">{u.email}</p>}
                 </div>
-                <Badge variant={u.role === "admin" ? "default" : "secondary"}>
-                  {u.role === "admin" ? "مدير" : "معلم"}
+                <Badge variant={u.role === "admin" ? "default" : u.role === "supervisor" ? "outline" : "secondary"}>
+                  {u.role === "admin" ? "مشرف عام" : u.role === "supervisor" ? "مشرف إداري" : "معلم"}
                 </Badge>
               </div>
-              <Button variant="outline" size="sm" className="w-full" onClick={() => setResetUser({ id: u.id, username: u.username })}>
-                <KeyRound className="w-4 h-4 ml-1" /> إعادة تعيين كلمة المرور
-              </Button>
+              <div className="grid grid-cols-2 gap-2">
+                <Select value={u.role} onValueChange={(v) => changeRole.mutate({ userId: u.id, role: v })}>
+                  <SelectTrigger className="text-xs"><Shield className="w-3 h-3 ml-1" /><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="teacher">معلم</SelectItem>
+                    <SelectItem value="supervisor">مشرف إداري</SelectItem>
+                    <SelectItem value="admin">مشرف عام</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button variant="outline" size="sm" onClick={() => setResetUser({ id: u.id, username: u.username })}>
+                  <KeyRound className="w-4 h-4 ml-1" /> كلمة المرور
+                </Button>
+              </div>
             </CardContent>
           </Card>
         ))}
       </div>
+
 
       <Dialog open={!!resetUser} onOpenChange={(v) => !v && setResetUser(null)}>
         <DialogContent>
