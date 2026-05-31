@@ -25,19 +25,29 @@ function ReportsPage() {
   const [from, setFrom] = useState(monthAgo);
   const [to, setTo] = useState(today);
   const [classId, setClassId] = useState<string>("all");
+  const [grade, setGrade] = useState<string>("all");
+  const [severity, setSeverity] = useState<string>("all");
+  const [typeId, setTypeId] = useState<string>("all");
 
   const { data: classes = [] } = useQuery({
     queryKey: ["classes"],
     queryFn: async () => (await supabase.from("classes").select("*").order("name")).data ?? [],
   });
+  const { data: vtypes = [] } = useQuery({
+    queryKey: ["violation_types"],
+    queryFn: async () => (await supabase.from("violation_types").select("*").order("name")).data ?? [],
+  });
+  const grades = useMemo(() => Array.from(new Set(classes.map((c: any) => c.grade).filter(Boolean))).sort() as string[], [classes]);
 
   const { data: violations = [] } = useQuery({
-    queryKey: ["violations-report", from, to, classId],
+    queryKey: ["violations-report", from, to, classId, grade, severity, typeId],
     queryFn: async () => {
-      const { data } = await supabase.from("violations")
-        .select("*, students(full_name, classes(id, name)), violation_types(name, severity)")
+      let q = supabase.from("violations")
+        .select("*, students(full_name, classes(id, name, grade)), violation_types(id, name, severity)")
         .gte("violation_date", from).lte("violation_date", to)
         .order("violation_date", { ascending: false });
+      if (typeId !== "all") q = q.eq("type_id", typeId);
+      const { data } = await q;
       let list = data ?? [];
       const ids = Array.from(new Set(list.map((v: any) => v.created_by).filter(Boolean)));
       if (ids.length) {
@@ -45,9 +55,13 @@ function ReportsPage() {
         const map = new Map((profs ?? []).map((p: any) => [p.id, p]));
         list.forEach((v: any) => { v.profiles = map.get(v.created_by) ?? null; });
       }
-      return classId === "all" ? list : list.filter((v: any) => v.students?.classes?.id === classId);
+      if (classId !== "all") list = list.filter((v: any) => v.students?.classes?.id === classId);
+      if (grade !== "all") list = list.filter((v: any) => v.students?.classes?.grade === grade);
+      if (severity !== "all") list = list.filter((v: any) => v.violation_types?.severity === severity);
+      return list;
     },
   });
+
 
 
   const byType = useMemo(() => {
@@ -214,24 +228,62 @@ function ReportsPage() {
       </div>
 
       <Card className="border-0 shadow-card">
-        <CardContent className="p-5 grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
-          <div className="space-y-2"><Label>من تاريخ</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
-          <div className="space-y-2"><Label>إلى تاريخ</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
-          <div className="space-y-2">
-            <Label>الفصل</Label>
-            <Select value={classId} onValueChange={setClassId}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">كل الفصول</SelectItem>
-                {classes.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
+        <CardContent className="p-5 space-y-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div className="space-y-2"><Label>من تاريخ</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
+            <div className="space-y-2"><Label>إلى تاريخ</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
+            <div className="space-y-2">
+              <Label>المستوى / الصف</Label>
+              <Select value={grade} onValueChange={setGrade}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">كل المستويات</SelectItem>
+                  {grades.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>الفصل</Label>
+              <Select value={classId} onValueChange={setClassId}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">كل الفصول</SelectItem>
+                  {classes.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>درجة المخالفة</Label>
+              <Select value={severity} onValueChange={setSeverity}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">كل الدرجات</SelectItem>
+                  <SelectItem value="الأولى">الأولى</SelectItem>
+                  <SelectItem value="الثانية">الثانية</SelectItem>
+                  <SelectItem value="الثالثة">الثالثة</SelectItem>
+                  <SelectItem value="الرابعة">الرابعة</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>نوع المخالفة</Label>
+              <Select value={typeId} onValueChange={setTypeId}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">كل الأنواع</SelectItem>
+                  {vtypes.map((t: any) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          <Button variant="outline" onClick={exportExcel}><FileDown className="w-4 h-4 ml-1" /> Excel</Button>
-          <Button variant="outline" onClick={exportWord}><FileText className="w-4 h-4 ml-1" /> Word</Button>
-          <Button onClick={exportPDF}><Printer className="w-4 h-4 ml-1" /> PDF</Button>
+          <div className="flex flex-wrap gap-2 pt-2 border-t">
+            <Button variant="outline" onClick={exportExcel}><FileDown className="w-4 h-4 ml-1" /> Excel</Button>
+            <Button variant="outline" onClick={exportWord}><FileText className="w-4 h-4 ml-1" /> Word</Button>
+            <Button onClick={exportPDF}><Printer className="w-4 h-4 ml-1" /> طباعة / PDF</Button>
+          </div>
         </CardContent>
       </Card>
+
 
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

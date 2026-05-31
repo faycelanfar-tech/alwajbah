@@ -9,8 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, KeyRound } from "lucide-react";
+import { Plus, KeyRound, Shield } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
+
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/teachers")({ component: TeachersPage });
@@ -18,7 +20,7 @@ export const Route = createFileRoute("/_app/teachers")({ component: TeachersPage
 function TeachersPage() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ username: "", full_name: "", password: "", email: "" });
+  const [form, setForm] = useState({ username: "", full_name: "", password: "", email: "", role: "teacher" as "teacher" | "supervisor" | "admin" });
   const [resetUser, setResetUser] = useState<{ id: string; username: string } | null>(null);
   const [newPwd, setNewPwd] = useState("");
   const resetFn = useServerFn(adminResetUserPassword);
@@ -37,21 +39,43 @@ function TeachersPage() {
       const email = `${form.username.toLowerCase().trim()}@alwajbah.local`;
       const { data, error } = await supabase.auth.signUp({
         email, password: form.password,
-        options: { data: { username: form.username.toLowerCase().trim(), full_name: form.full_name } },
+        options: { data: { username: form.username.toLowerCase().trim(), full_name: form.full_name, role: form.role } },
       });
       if (error) throw error;
-      // Save real email on profile for password recovery
       if (form.email && data.user) {
         await supabase.from("profiles").update({ email: form.email.trim() }).eq("id", data.user.id);
       }
+      // Force-set role (handle_new_user defaults to teacher for non-first user)
+      if (data.user && form.role !== "teacher") {
+        await supabase.from("user_roles").upsert(
+          { user_id: data.user.id, role: form.role as any },
+          { onConflict: "user_id,role" }
+        );
+        // Remove default teacher role if it was assigned
+        await supabase.from("user_roles").delete().eq("user_id", data.user.id).eq("role", "teacher");
+      }
     },
     onSuccess: () => {
-      toast.success("تم إنشاء حساب المعلم");
+      toast.success("تم إنشاء الحساب بنجاح");
       qc.invalidateQueries({ queryKey: ["users"] });
-      setOpen(false); setForm({ username: "", full_name: "", password: "", email: "" });
+      setOpen(false); setForm({ username: "", full_name: "", password: "", email: "", role: "teacher" });
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const changeRole = useMutation({
+    mutationFn: async ({ userId, role }: { userId: string; role: string }) => {
+      await supabase.from("user_roles").delete().eq("user_id", userId);
+      const { error } = await supabase.from("user_roles").insert({ user_id: userId, role: role as any });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("تم تحديث الدور");
+      qc.invalidateQueries({ queryKey: ["users"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
 
   const doReset = useMutation({
     mutationFn: async () => {
@@ -69,21 +93,32 @@ function TeachersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">المعلمون</h1>
-          <p className="text-muted-foreground mt-1">حسابات المستخدمين بالنظام</p>
+          <h1 className="text-3xl font-bold">المعلمون والحسابات</h1>
+          <p className="text-muted-foreground mt-1">إدارة حسابات المستخدمين وأدوارهم</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild><Button><Plus className="w-4 h-4 ml-1" /> إضافة معلم</Button></DialogTrigger>
+          <DialogTrigger asChild><Button><Plus className="w-4 h-4 ml-1" /> إضافة حساب</Button></DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle>إضافة حساب معلم</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>إضافة حساب جديد</DialogTitle></DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2"><Label>الاسم الكامل *</Label><Input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} /></div>
               <div className="space-y-2"><Label>اسم المستخدم *</Label><Input value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} placeholder="بالإنجليزية بدون مسافات" /></div>
-              <div className="space-y-2"><Label>البريد الإلكتروني (اختياري لاستعادة كلمة المرور)</Label><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="teacher@example.com" /></div>
+              <div className="space-y-2">
+                <Label>الدور *</Label>
+                <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v as any })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="teacher">معلم</SelectItem>
+                    <SelectItem value="supervisor">مشرف إداري</SelectItem>
+                    <SelectItem value="admin">مشرف عام (مدير النظام)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2"><Label>البريد الإلكتروني (اختياري)</Label><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="user@example.com" /></div>
               <div className="space-y-2"><Label>كلمة المرور *</Label><Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} minLength={6} /></div>
-              <p className="text-xs text-muted-foreground">⚠️ بعد الحفظ قد يتم تسجيل دخولك بحساب المعلم الجديد. سجّل خروج وادخل مرة أخرى بحسابك.</p>
+              <p className="text-xs text-muted-foreground">⚠️ بعد الحفظ قد يتم تسجيل دخولك بالحساب الجديد. سجّل خروج وادخل مرة أخرى بحسابك.</p>
             </div>
-            <DialogFooter><Button onClick={() => add.mutate()} disabled={!form.username || !form.password || !form.full_name}>إنشاء</Button></DialogFooter>
+            <DialogFooter><Button onClick={() => add.mutate()} disabled={!form.username || !form.password || !form.full_name || add.isPending}>إنشاء</Button></DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
@@ -101,17 +136,28 @@ function TeachersPage() {
                   <p className="text-sm text-muted-foreground truncate">@{u.username}</p>
                   {u.email && <p className="text-xs text-muted-foreground truncate">{u.email}</p>}
                 </div>
-                <Badge variant={u.role === "admin" ? "default" : "secondary"}>
-                  {u.role === "admin" ? "مدير" : "معلم"}
+                <Badge variant={u.role === "admin" ? "default" : u.role === "supervisor" ? "outline" : "secondary"}>
+                  {u.role === "admin" ? "مشرف عام" : u.role === "supervisor" ? "مشرف إداري" : "معلم"}
                 </Badge>
               </div>
-              <Button variant="outline" size="sm" className="w-full" onClick={() => setResetUser({ id: u.id, username: u.username })}>
-                <KeyRound className="w-4 h-4 ml-1" /> إعادة تعيين كلمة المرور
-              </Button>
+              <div className="grid grid-cols-2 gap-2">
+                <Select value={u.role} onValueChange={(v) => changeRole.mutate({ userId: u.id, role: v })}>
+                  <SelectTrigger className="text-xs"><Shield className="w-3 h-3 ml-1" /><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="teacher">معلم</SelectItem>
+                    <SelectItem value="supervisor">مشرف إداري</SelectItem>
+                    <SelectItem value="admin">مشرف عام</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button variant="outline" size="sm" onClick={() => setResetUser({ id: u.id, username: u.username })}>
+                  <KeyRound className="w-4 h-4 ml-1" /> كلمة المرور
+                </Button>
+              </div>
             </CardContent>
           </Card>
         ))}
       </div>
+
 
       <Dialog open={!!resetUser} onOpenChange={(v) => !v && setResetUser(null)}>
         <DialogContent>

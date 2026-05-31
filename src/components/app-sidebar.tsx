@@ -5,16 +5,17 @@ import { LayoutDashboard, Users, GraduationCap, AlertTriangle, FileBarChart, Set
 import { cn } from "@/lib/utils";
 
 const nav: { to: string; label: string; icon: typeof LayoutDashboard; roles: string[] }[] = [
-  { to: "/dashboard", label: "الرئيسية", icon: LayoutDashboard, roles: ["admin", "teacher"] },
-  { to: "/violations", label: "المخالفات", icon: AlertTriangle, roles: ["admin", "teacher"] },
-  { to: "/actions", label: "الإجراءات", icon: ClipboardCheck, roles: ["admin"] },
+  { to: "/dashboard", label: "الرئيسية", icon: LayoutDashboard, roles: ["admin", "supervisor", "teacher"] },
+  { to: "/violations", label: "المخالفات", icon: AlertTriangle, roles: ["admin", "supervisor", "teacher"] },
+  { to: "/actions", label: "الإجراءات", icon: ClipboardCheck, roles: ["admin", "supervisor"] },
   { to: "/rewards", label: "النقاط والمكافآت", icon: Trophy, roles: ["admin", "teacher"] },
   { to: "/students", label: "الطلاب", icon: GraduationCap, roles: ["admin", "teacher"] },
   { to: "/classes", label: "الفصول", icon: Users, roles: ["admin"] },
-  { to: "/teachers", label: "المعلمون", icon: UserCog, roles: ["admin"] },
-  { to: "/reports", label: "التقارير", icon: FileBarChart, roles: ["admin", "teacher"] },
+  { to: "/teachers", label: "المعلمون والحسابات", icon: UserCog, roles: ["admin"] },
+  { to: "/reports", label: "التقارير", icon: FileBarChart, roles: ["admin", "supervisor", "teacher"] },
   { to: "/settings", label: "الإعدادات", icon: SettingsIcon, roles: ["admin"] },
 ];
+
 
 export function AppSidebar() {
   const { role, profile, signOut } = useAuth();
