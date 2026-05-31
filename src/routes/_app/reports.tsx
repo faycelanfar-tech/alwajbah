@@ -228,24 +228,62 @@ function ReportsPage() {
       </div>
 
       <Card className="border-0 shadow-card">
-        <CardContent className="p-5 grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
-          <div className="space-y-2"><Label>من تاريخ</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
-          <div className="space-y-2"><Label>إلى تاريخ</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
-          <div className="space-y-2">
-            <Label>الفصل</Label>
-            <Select value={classId} onValueChange={setClassId}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">كل الفصول</SelectItem>
-                {classes.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
+        <CardContent className="p-5 space-y-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div className="space-y-2"><Label>من تاريخ</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
+            <div className="space-y-2"><Label>إلى تاريخ</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
+            <div className="space-y-2">
+              <Label>المستوى / الصف</Label>
+              <Select value={grade} onValueChange={setGrade}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">كل المستويات</SelectItem>
+                  {grades.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>الفصل</Label>
+              <Select value={classId} onValueChange={setClassId}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">كل الفصول</SelectItem>
+                  {classes.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>درجة المخالفة</Label>
+              <Select value={severity} onValueChange={setSeverity}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">كل الدرجات</SelectItem>
+                  <SelectItem value="الأولى">الأولى</SelectItem>
+                  <SelectItem value="الثانية">الثانية</SelectItem>
+                  <SelectItem value="الثالثة">الثالثة</SelectItem>
+                  <SelectItem value="الرابعة">الرابعة</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>نوع المخالفة</Label>
+              <Select value={typeId} onValueChange={setTypeId}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">كل الأنواع</SelectItem>
+                  {vtypes.map((t: any) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          <Button variant="outline" onClick={exportExcel}><FileDown className="w-4 h-4 ml-1" /> Excel</Button>
-          <Button variant="outline" onClick={exportWord}><FileText className="w-4 h-4 ml-1" /> Word</Button>
-          <Button onClick={exportPDF}><Printer className="w-4 h-4 ml-1" /> PDF</Button>
+          <div className="flex flex-wrap gap-2 pt-2 border-t">
+            <Button variant="outline" onClick={exportExcel}><FileDown className="w-4 h-4 ml-1" /> Excel</Button>
+            <Button variant="outline" onClick={exportWord}><FileText className="w-4 h-4 ml-1" /> Word</Button>
+            <Button onClick={exportPDF}><Printer className="w-4 h-4 ml-1" /> طباعة / PDF</Button>
+          </div>
         </CardContent>
       </Card>
+
 
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
