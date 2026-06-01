@@ -6,9 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, Users } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+
+const STAGES = ["المرحلة الأولى", "المرحلة الثانية", "المرحلة الثالثة"];
 
 export const Route = createFileRoute("/_app/classes")({ component: ClassesPage });
 
@@ -17,6 +21,8 @@ function ClassesPage() {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [grade, setGrade] = useState("");
+  const [stage, setStage] = useState<string>("المرحلة الأولى");
+  const [filterStage, setFilterStage] = useState<string>("all");
 
   const { data: classes = [] } = useQuery({
     queryKey: ["classes-with-count"],
