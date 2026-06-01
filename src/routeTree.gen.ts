@@ -22,6 +22,7 @@ import { Route as AppRewardsRouteImport } from './routes/_app/rewards'
 import { Route as AppReportsRouteImport } from './routes/_app/reports'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as AppClassesRouteImport } from './routes/_app/classes'
+import { Route as AppAuditRouteImport } from './routes/_app/audit'
 import { Route as AppActionsRouteImport } from './routes/_app/actions'
 import { Route as AppStudentsIdRouteImport } from './routes/_app/students.$id'
 
@@ -89,6 +90,11 @@ const AppClassesRoute = AppClassesRouteImport.update({
   path: '/classes',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAuditRoute = AppAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppActionsRoute = AppActionsRouteImport.update({
   id: '/actions',
   path: '/actions',
@@ -106,6 +112,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/actions': typeof AppActionsRoute
+  '/audit': typeof AppAuditRoute
   '/classes': typeof AppClassesRoute
   '/dashboard': typeof AppDashboardRoute
   '/reports': typeof AppReportsRoute
@@ -122,6 +129,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/actions': typeof AppActionsRoute
+  '/audit': typeof AppAuditRoute
   '/classes': typeof AppClassesRoute
   '/dashboard': typeof AppDashboardRoute
   '/reports': typeof AppReportsRoute
@@ -140,6 +148,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/_app/actions': typeof AppActionsRoute
+  '/_app/audit': typeof AppAuditRoute
   '/_app/classes': typeof AppClassesRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/reports': typeof AppReportsRoute
@@ -158,6 +167,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/actions'
+    | '/audit'
     | '/classes'
     | '/dashboard'
     | '/reports'
@@ -174,6 +184,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/actions'
+    | '/audit'
     | '/classes'
     | '/dashboard'
     | '/reports'
@@ -191,6 +202,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/_app/actions'
+    | '/_app/audit'
     | '/_app/classes'
     | '/_app/dashboard'
     | '/_app/reports'
@@ -303,6 +315,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppClassesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/audit': {
+      id: '/_app/audit'
+      path: '/audit'
+      fullPath: '/audit'
+      preLoaderRoute: typeof AppAuditRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/actions': {
       id: '/_app/actions'
       path: '/actions'
@@ -334,6 +353,7 @@ const AppStudentsRouteWithChildren = AppStudentsRoute._addFileChildren(
 
 interface AppRouteChildren {
   AppActionsRoute: typeof AppActionsRoute
+  AppAuditRoute: typeof AppAuditRoute
   AppClassesRoute: typeof AppClassesRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppReportsRoute: typeof AppReportsRoute
@@ -346,6 +366,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppActionsRoute: AppActionsRoute,
+  AppAuditRoute: AppAuditRoute,
   AppClassesRoute: AppClassesRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppReportsRoute: AppReportsRoute,
