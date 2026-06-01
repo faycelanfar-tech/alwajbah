@@ -82,18 +82,21 @@ export type Database = {
           grade: string | null
           id: string
           name: string
+          stage: string | null
         }
         Insert: {
           created_at?: string
           grade?: string | null
           id?: string
           name: string
+          stage?: string | null
         }
         Update: {
           created_at?: string
           grade?: string | null
           id?: string
           name?: string
+          stage?: string | null
         }
         Relationships: []
       }
