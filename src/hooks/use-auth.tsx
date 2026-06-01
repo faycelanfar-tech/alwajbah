@@ -55,9 +55,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signIn(username: string, password: string) {
-    const email = `${username.trim().toLowerCase()}@${USERNAME_DOMAIN}`;
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const uname = username.trim().toLowerCase();
+    const email = `${uname}@${USERNAME_DOMAIN}`;
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
+    // Block disabled accounts
+    if (data.user) {
+      const { data: p } = await supabase.from("profiles").select("is_active").eq("id", data.user.id).maybeSingle();
+      if (p && (p as any).is_active === false) {
+        await supabase.auth.signOut();
+        throw new Error("هذا الحساب معطّل. يرجى مراجعة المشرف العام.");
+      }
+    }
   }
 
   async function signOut() {
