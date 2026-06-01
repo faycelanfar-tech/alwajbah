@@ -34,10 +34,10 @@ function ClassesPage() {
 
   const add = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("classes").insert({ name, grade: grade || null });
+      const { error } = await supabase.from("classes").insert({ name, grade: grade || null, stage } as any);
       if (error) throw error;
     },
-    onSuccess: () => { toast.success("تمت الإضافة"); qc.invalidateQueries({ queryKey: ["classes-with-count"] }); qc.invalidateQueries({ queryKey: ["classes"] }); setOpen(false); setName(""); setGrade(""); },
+    onSuccess: () => { toast.success("تمت الإضافة"); qc.invalidateQueries({ queryKey: ["classes-with-count"] }); qc.invalidateQueries({ queryKey: ["classes"] }); setOpen(false); setName(""); setGrade(""); setStage("المرحلة الأولى"); },
     onError: (e: any) => toast.error(e.message),
   });
 
