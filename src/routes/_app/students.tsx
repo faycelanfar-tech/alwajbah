@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, ClipboardPaste, Search } from "lucide-react";
+import { Plus, Trash2, ClipboardPaste, Search, Eye } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -83,7 +83,7 @@ function StudentsPage() {
                   <th className="text-right p-3 font-semibold">الاسم</th>
                   <th className="text-right p-3 font-semibold">رقم الطالب</th>
                   <th className="text-right p-3 font-semibold">الفصل</th>
-                  {isAdmin && <th className="text-center p-3 font-semibold w-20">إجراء</th>}
+                  <th className="text-center p-3 font-semibold w-28">إجراءات</th>
                 </tr>
               </thead>
               <tbody>
@@ -95,13 +95,18 @@ function StudentsPage() {
                     <td className="p-3 font-medium">{s.full_name}</td>
                     <td className="p-3 text-muted-foreground">{s.student_number || "—"}</td>
                     <td className="p-3 text-muted-foreground">{s.classes?.name || "—"}</td>
-                    {isAdmin && (
-                      <td className="p-3 text-center">
-                        <Button size="icon" variant="ghost" onClick={() => { if (confirm("حذف الطالب؟")) del.mutate(s.id); }}>
-                          <Trash2 className="w-4 h-4 text-destructive" />
-                        </Button>
-                      </td>
-                    )}
+                    <td className="p-3 text-center">
+                      <div className="flex justify-center gap-1">
+                        <Link to="/students/$id" params={{ id: s.id }}>
+                          <Button size="icon" variant="ghost" title="بطاقة الطالب"><Eye className="w-4 h-4 text-primary" /></Button>
+                        </Link>
+                        {isAdmin && (
+                          <Button size="icon" variant="ghost" onClick={() => { if (confirm("حذف الطالب؟")) del.mutate(s.id); }}>
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>

@@ -1,7 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { useSettings } from "@/hooks/use-settings";
-import { LayoutDashboard, Users, GraduationCap, AlertTriangle, FileBarChart, Settings as SettingsIcon, LogOut, UserCog, School, Trophy, ClipboardCheck } from "lucide-react";
+import { LayoutDashboard, Users, GraduationCap, AlertTriangle, FileBarChart, Settings as SettingsIcon, LogOut, UserCog, School, Trophy, ClipboardCheck, History } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const nav: { to: string; label: string; icon: typeof LayoutDashboard; roles: string[] }[] = [
@@ -13,6 +13,7 @@ const nav: { to: string; label: string; icon: typeof LayoutDashboard; roles: str
   { to: "/classes", label: "الفصول", icon: Users, roles: ["admin"] },
   { to: "/teachers", label: "المعلمون والحسابات", icon: UserCog, roles: ["admin"] },
   { to: "/reports", label: "التقارير", icon: FileBarChart, roles: ["admin", "supervisor", "teacher"] },
+  { to: "/audit", label: "سجل النشاط", icon: History, roles: ["admin"] },
   { to: "/settings", label: "الإعدادات", icon: SettingsIcon, roles: ["admin"] },
 ];
 

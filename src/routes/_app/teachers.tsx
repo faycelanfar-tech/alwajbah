@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, KeyRound, Shield } from "lucide-react";
+import { Plus, KeyRound, Shield, Power } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
 
@@ -76,6 +76,18 @@ function TeachersPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const toggleActive = useMutation({
+    mutationFn: async ({ userId, isActive }: { userId: string; isActive: boolean }) => {
+      const { error } = await supabase.from("profiles").update({ is_active: isActive } as any).eq("id", userId);
+      if (error) throw error;
+    },
+    onSuccess: (_d, vars) => {
+      toast.success(vars.isActive ? "تم تفعيل الحساب" : "تم تعطيل الحساب");
+      qc.invalidateQueries({ queryKey: ["users"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
 
   const doReset = useMutation({
     mutationFn: async () => {
@@ -124,8 +136,10 @@ function TeachersPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {users.map((u: { id: string; username: string; full_name: string | null; email: string | null; role: string }) => (
-          <Card key={u.id} className="border-0 shadow-card">
+        {users.map((u: { id: string; username: string; full_name: string | null; email: string | null; role: string; is_active?: boolean }) => {
+          const active = u.is_active !== false;
+          return (
+          <Card key={u.id} className={`border-0 shadow-card ${!active ? "opacity-60" : ""}`}>
             <CardContent className="p-5 space-y-3">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-gradient-primary text-primary-foreground flex items-center justify-center font-bold text-lg">
@@ -136,9 +150,12 @@ function TeachersPage() {
                   <p className="text-sm text-muted-foreground truncate">@{u.username}</p>
                   {u.email && <p className="text-xs text-muted-foreground truncate">{u.email}</p>}
                 </div>
-                <Badge variant={u.role === "admin" ? "default" : u.role === "supervisor" ? "outline" : "secondary"}>
-                  {u.role === "admin" ? "مشرف عام" : u.role === "supervisor" ? "مشرف إداري" : "معلم"}
-                </Badge>
+                <div className="flex flex-col items-end gap-1">
+                  <Badge variant={u.role === "admin" ? "default" : u.role === "supervisor" ? "outline" : "secondary"}>
+                    {u.role === "admin" ? "مشرف عام" : u.role === "supervisor" ? "مشرف إداري" : "معلم"}
+                  </Badge>
+                  {!active && <Badge variant="outline" className="bg-rose-100 text-rose-700 border-rose-200 text-[10px]">معطّل</Badge>}
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <Select value={u.role} onValueChange={(v) => changeRole.mutate({ userId: u.id, role: v })}>
@@ -153,9 +170,18 @@ function TeachersPage() {
                   <KeyRound className="w-4 h-4 ml-1" /> كلمة المرور
                 </Button>
               </div>
+              <Button
+                variant={active ? "outline" : "default"}
+                size="sm"
+                className={`w-full ${active ? "text-rose-600 hover:bg-rose-50" : ""}`}
+                onClick={() => toggleActive.mutate({ userId: u.id, isActive: !active })}
+              >
+                <Power className="w-4 h-4 ml-1" /> {active ? "تعطيل الحساب" : "تفعيل الحساب"}
+              </Button>
             </CardContent>
           </Card>
-        ))}
+          );
+        })}
       </div>
 
 

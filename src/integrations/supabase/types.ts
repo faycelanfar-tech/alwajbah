@@ -154,6 +154,7 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          is_active: boolean
           username: string
         }
         Insert: {
@@ -161,6 +162,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          is_active?: boolean
           username: string
         }
         Update: {
@@ -168,6 +170,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          is_active?: boolean
           username?: string
         }
         Relationships: []
