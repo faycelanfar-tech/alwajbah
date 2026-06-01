@@ -83,7 +83,7 @@ function StudentsPage() {
                   <th className="text-right p-3 font-semibold">الاسم</th>
                   <th className="text-right p-3 font-semibold">رقم الطالب</th>
                   <th className="text-right p-3 font-semibold">الفصل</th>
-                  {isAdmin && <th className="text-center p-3 font-semibold w-20">إجراء</th>}
+                  <th className="text-center p-3 font-semibold w-28">إجراءات</th>
                 </tr>
               </thead>
               <tbody>
@@ -95,13 +95,18 @@ function StudentsPage() {
                     <td className="p-3 font-medium">{s.full_name}</td>
                     <td className="p-3 text-muted-foreground">{s.student_number || "—"}</td>
                     <td className="p-3 text-muted-foreground">{s.classes?.name || "—"}</td>
-                    {isAdmin && (
-                      <td className="p-3 text-center">
-                        <Button size="icon" variant="ghost" onClick={() => { if (confirm("حذف الطالب؟")) del.mutate(s.id); }}>
-                          <Trash2 className="w-4 h-4 text-destructive" />
-                        </Button>
-                      </td>
-                    )}
+                    <td className="p-3 text-center">
+                      <div className="flex justify-center gap-1">
+                        <Link to="/students/$id" params={{ id: s.id }}>
+                          <Button size="icon" variant="ghost" title="بطاقة الطالب"><Eye className="w-4 h-4 text-primary" /></Button>
+                        </Link>
+                        {isAdmin && (
+                          <Button size="icon" variant="ghost" onClick={() => { if (confirm("حذف الطالب؟")) del.mutate(s.id); }}>
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
