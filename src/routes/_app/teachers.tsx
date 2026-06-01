@@ -76,6 +76,18 @@ function TeachersPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const toggleActive = useMutation({
+    mutationFn: async ({ userId, isActive }: { userId: string; isActive: boolean }) => {
+      const { error } = await supabase.from("profiles").update({ is_active: isActive } as any).eq("id", userId);
+      if (error) throw error;
+    },
+    onSuccess: (_d, vars) => {
+      toast.success(vars.isActive ? "تم تفعيل الحساب" : "تم تعطيل الحساب");
+      qc.invalidateQueries({ queryKey: ["users"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
 
   const doReset = useMutation({
     mutationFn: async () => {
