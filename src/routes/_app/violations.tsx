@@ -89,10 +89,10 @@ function ViolationsPage() {
               const canDelete = isAdmin || v.created_by === user?.id;
               return (
                 <div key={v.id} className="p-4 rounded-lg border bg-card hover:shadow-card transition-shadow">
-                  <div className="flex items-start justify-between gap-3 flex-wrap">
-                    <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0 space-y-2">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-bold">{v.students?.full_name}</h3>
+                        <h3 className="font-bold truncate max-w-full">{v.students?.full_name}</h3>
                         {v.students?.classes?.name && <Badge variant="secondary">{v.students.classes.name}</Badge>}
                         {v.violation_types?.severity && (
                           <Badge variant="outline" className={severityColor[v.violation_types.severity] || ""}>
@@ -106,20 +106,20 @@ function ViolationsPage() {
                           <Badge className="bg-amber-100 text-amber-700 border-amber-200" variant="outline">بانتظار إجراء</Badge>
                         )}
                       </div>
-                      <p className="mt-2 text-sm font-medium text-primary">{v.violation_types?.name || "—"}</p>
-                      {v.description && <p className="mt-1 text-sm text-muted-foreground">{v.description}</p>}
+                      <p className="text-sm font-medium text-primary break-words">{v.violation_types?.name || "—"}</p>
+                      {v.description && <p className="text-sm text-muted-foreground break-words whitespace-pre-wrap">{v.description}</p>}
                       {v.action_taken && (
-                        <div className="mt-2 p-2 rounded bg-emerald-50 border border-emerald-200 text-sm">
+                        <div className="p-2 rounded bg-emerald-50 border border-emerald-200 text-sm break-words whitespace-pre-wrap">
                           <span className="text-emerald-700 font-medium">الإجراء المتخذ: </span>
                           <span>{v.action_taken}</span>
                         </div>
                       )}
-                      <div className="mt-2 text-xs text-muted-foreground flex gap-3 flex-wrap">
+                      <div className="text-xs text-muted-foreground flex gap-3 flex-wrap">
                         <span>📅 {v.violation_date}</span>
                         <span>👤 {v.profiles?.full_name || v.profiles?.username || "—"}</span>
                       </div>
                     </div>
-                    <div className="flex gap-1">
+                    <div className="flex gap-1 shrink-0">
                       <HistoryDialog violation={v} />
                       {canEdit && <ActionTakenDialog violation={v} />}
                       {canDelete && (
