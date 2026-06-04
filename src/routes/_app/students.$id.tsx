@@ -110,7 +110,7 @@ function StudentProfile() {
       <h3>سجل المخالفات</h3>
       <table><thead><tr><th>التاريخ</th><th>النوع</th><th>الدرجة</th><th>الوصف</th><th>الإجراء</th></tr></thead>
       <tbody>${rows || '<tr><td colspan="5" style="text-align:center">لا توجد مخالفات</td></tr>'}</tbody></table>
-      <footer>تاريخ التقرير: ${new Date().toLocaleDateString("ar-EG")} — ${esc(settings.footer_text || "")}</footer>
+      <footer>تاريخ التقرير: ${new Date().toLocaleDateString("ar-EG")}</footer>
       <script>window.onload=()=>window.print()</script>
     </body></html>`;
 
