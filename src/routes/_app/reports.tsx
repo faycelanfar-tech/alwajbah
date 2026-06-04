@@ -313,7 +313,7 @@ function ReportsPage() {
 
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card className="border-0 shadow-card">
+        <Card className="border-0 shadow-card" data-print-chart="المخالفات حسب الفصل">
           <CardHeader><CardTitle>المخالفات حسب الفصل</CardTitle></CardHeader>
           <CardContent style={{ height: 300 }}>
             <ResponsiveContainer width="100%" height="100%">
@@ -325,7 +325,7 @@ function ReportsPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-0 shadow-card">
+        <Card className="border-0 shadow-card" data-print-chart="توزيع حسب نوع المخالفة">
           <CardHeader><CardTitle>توزيع حسب النوع</CardTitle></CardHeader>
           <CardContent style={{ height: 300 }}>
             <ResponsiveContainer width="100%" height="100%">
@@ -339,7 +339,7 @@ function ReportsPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-0 shadow-card lg:col-span-2">
+        <Card className="border-0 shadow-card lg:col-span-2" data-print-chart="توزيع حسب درجة الخطورة">
           <CardHeader><CardTitle>توزيع حسب درجة الخطورة</CardTitle></CardHeader>
           <CardContent style={{ height: 280 }}>
             <ResponsiveContainer width="100%" height="100%">
