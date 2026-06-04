@@ -165,6 +165,26 @@ function ReportsPage() {
 
     const school = settings.school_name?.trim() || "نظام إدارة المخالفات";
     const sub = settings.subtitle || "";
+
+    // Capture rendered charts as inline SVG for printing
+    const chartNodes = Array.from(document.querySelectorAll<HTMLElement>("[data-print-chart]"));
+    const chartsHtml = chartNodes.map((node) => {
+      const title = node.getAttribute("data-print-chart") || "";
+      const svg = node.querySelector("svg.recharts-surface") as SVGSVGElement | null;
+      if (!svg) return "";
+      const clone = svg.cloneNode(true) as SVGSVGElement;
+      const w = svg.getBoundingClientRect().width || 600;
+      const h = svg.getBoundingClientRect().height || 280;
+      if (!clone.getAttribute("viewBox")) clone.setAttribute("viewBox", `0 0 ${w} ${h}`);
+      clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+      clone.removeAttribute("width");
+      clone.removeAttribute("height");
+      clone.setAttribute("preserveAspectRatio", "xMidYMid meet");
+      clone.style.width = "100%";
+      clone.style.height = "auto";
+      return `<div class="chart"><h3>${esc(title)}</h3>${clone.outerHTML}</div>`;
+    }).join("");
+
     const rows = violations.map((v: any, i: number) => `
       <tr>
         <td>${i + 1}</td><td>${v.violation_date}</td>
@@ -183,15 +203,20 @@ function ReportsPage() {
         .header { text-align: center; border-bottom: 3px solid #1d4ed8; padding-bottom: 10px; margin-bottom: 14px; }
         .header h1 { margin: 0; color: #1d4ed8; font-size: 22px; }
         .header p { margin: 4px 0; color: #555; font-size: 13px; }
-        .meta { display: flex; justify-content: space-between; margin: 10px 0; font-size: 12px; color: #555; }
         .stats { display: flex; gap: 8px; margin: 10px 0 16px; }
         .stat { flex: 1; border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px; text-align: center; }
         .stat b { display: block; font-size: 18px; color: #1d4ed8; }
-        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0; }
+        .chart { border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px; page-break-inside: avoid; }
+        .chart h3 { margin: 0 0 6px; font-size: 13px; color: #1d4ed8; text-align: center; }
+        .chart svg { width: 100% !important; height: auto !important; max-height: 240px; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; page-break-inside: auto; }
+        tr { page-break-inside: avoid; }
         th, td { border: 1px solid #d1d5db; padding: 6px; text-align: right; }
         th { background: #1d4ed8; color: #fff; }
         tr:nth-child(even) td { background: #f9fafb; }
         .footer { margin-top: 18px; text-align: center; font-size: 11px; color: #777; border-top: 1px solid #e5e7eb; padding-top: 8px; }
+        h2 { color: #1d4ed8; font-size: 15px; margin: 16px 0 8px; }
       </style></head><body>
       <div class="header">
         <h1>${esc(school)}</h1>
@@ -204,6 +229,8 @@ function ReportsPage() {
         <div class="stat"><b>${actionsPending}</b>بانتظار إجراء</div>
         <div class="stat"><b>${byStudent.length}</b>عدد الطلاب</div>
       </div>
+      ${chartsHtml ? `<h2>الرسوم البيانية</h2><div class="charts">${chartsHtml}</div>` : ""}
+      <h2>تفاصيل المخالفات</h2>
       <table>
         <thead><tr>
           <th>م</th><th>التاريخ</th><th>الطالب</th><th>الفصل</th>
@@ -211,8 +238,8 @@ function ReportsPage() {
         </tr></thead>
         <tbody>${rows || `<tr><td colspan="8" style="text-align:center;padding:20px">لا توجد بيانات</td></tr>`}</tbody>
       </table>
-      <div class="footer">تطوير: فيصل أحمد عنفار — ${new Date().toLocaleDateString("ar-EG")}</div>
-      <script>window.onload = () => { window.print(); };</script>
+      <div class="footer">${new Date().toLocaleDateString("ar-EG")}</div>
+      <script>window.onload = () => { setTimeout(() => window.print(), 300); };</script>
       </body></html>`;
     const w = window.open("", "_blank");
     if (!w) return;
