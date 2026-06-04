@@ -153,11 +153,6 @@ function ReportsPage() {
           new Paragraph({ text: "" }),
           new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [headRow, ...bodyRows] }),
           new Paragraph({ text: "" }),
-        </children>
-      }],
-    });
-    // (developer credit removed from reports)
-    const _noop = HeadingLevel; void _noop;
         ],
       }],
     });
