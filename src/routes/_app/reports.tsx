@@ -153,7 +153,11 @@ function ReportsPage() {
           new Paragraph({ text: "" }),
           new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [headRow, ...bodyRows] }),
           new Paragraph({ text: "" }),
-          new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "تطوير: فيصل أحمد عنفار", italics: true })] }),
+        </children>
+      }],
+    });
+    // (developer credit removed from reports)
+    const _noop = HeadingLevel; void _noop;
         ],
       }],
     });
