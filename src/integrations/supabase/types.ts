@@ -100,39 +100,6 @@ export type Database = {
         }
         Relationships: []
       }
-      notifications: {
-        Row: {
-          body: string | null
-          created_at: string
-          id: string
-          kind: string
-          link: string | null
-          read: boolean
-          title: string
-          user_id: string
-        }
-        Insert: {
-          body?: string | null
-          created_at?: string
-          id?: string
-          kind?: string
-          link?: string | null
-          read?: boolean
-          title: string
-          user_id: string
-        }
-        Update: {
-          body?: string | null
-          created_at?: string
-          id?: string
-          kind?: string
-          link?: string | null
-          read?: boolean
-          title?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       point_transactions: {
         Row: {
           class_id: string | null
@@ -358,7 +325,6 @@ export type Database = {
       violations: {
         Row: {
           action_taken: string | null
-          attachment_url: string | null
           created_at: string
           created_by: string | null
           description: string | null
@@ -370,7 +336,6 @@ export type Database = {
         }
         Insert: {
           action_taken?: string | null
-          attachment_url?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -382,7 +347,6 @@ export type Database = {
         }
         Update: {
           action_taken?: string | null
-          attachment_url?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null

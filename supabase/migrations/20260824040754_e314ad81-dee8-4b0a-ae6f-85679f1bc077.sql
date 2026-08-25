@@ -1,1 +1,0 @@
-REVOKE ALL ON FUNCTION public.notify_violation_events() FROM PUBLIC, anon, authenticated;
