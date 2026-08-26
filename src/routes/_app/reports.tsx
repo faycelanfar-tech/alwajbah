@@ -7,8 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FileDown, FileText, Printer } from "lucide-react";
-import { useMemo, useState } from "react";
+import { FileDown, FileText, Printer, Download } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
@@ -26,6 +26,9 @@ function ReportsPage() {
   const [to, setTo] = useState(today);
   const [classId, setClassId] = useState<string>("all");
   const [grade, setGrade] = useState<string>("all");
+  const [stage, setStage] = useState<string>("all");
+  const [studentId, setStudentId] = useState<string>("all");
+  const [studentSearch, setStudentSearch] = useState("");
   const [severity, setSeverity] = useState<string>("all");
   const [typeId, setTypeId] = useState<string>("all");
 
@@ -37,16 +40,75 @@ function ReportsPage() {
     queryKey: ["violation_types"],
     queryFn: async () => (await supabase.from("violation_types").select("*").order("name")).data ?? [],
   });
-  const grades = useMemo(() => Array.from(new Set(classes.map((c: any) => c.grade).filter(Boolean))).sort() as string[], [classes]);
+  const { data: allStudents = [] } = useQuery({
+    queryKey: ["students-all"],
+    queryFn: async () => (await supabase.from("students").select("id, full_name, class_id").order("full_name")).data ?? [],
+  });
+
+  const stages = useMemo(
+    () => Array.from(new Set(classes.map((c: any) => c.stage).filter(Boolean))).sort() as string[],
+    [classes],
+  );
+  // الصفوف الدراسية ضمن المرحلة المختارة
+  const grades = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          classes
+            .filter((c: any) => stage === "all" || c.stage === stage)
+            .map((c: any) => c.grade)
+            .filter(Boolean),
+        ),
+      ).sort() as string[],
+    [classes, stage],
+  );
+  // الفصول ضمن المرحلة + الصف المختار
+  const filteredClasses = useMemo(
+    () =>
+      classes.filter(
+        (c: any) => (stage === "all" || c.stage === stage) && (grade === "all" || c.grade === grade),
+      ),
+    [classes, stage, grade],
+  );
+  // الطلاب ضمن الفصول المتاحة
+  const filteredStudents = useMemo(() => {
+    const ids = new Set(filteredClasses.map((c: any) => c.id));
+    const list = allStudents.filter((s: any) =>
+      classId !== "all" ? s.class_id === classId : ids.has(s.class_id),
+    );
+    const q = studentSearch.trim();
+    return q ? list.filter((s: any) => (s.full_name || "").includes(q)) : list;
+  }, [allStudents, filteredClasses, classId, studentSearch]);
+
+  // إعادة الضبط عند تغيّر المستويات الأعلى
+  useEffect(() => {
+    if (grade !== "all" && !grades.includes(grade)) setGrade("all");
+  }, [grades, grade]);
+  useEffect(() => {
+    if (classId !== "all" && !filteredClasses.some((c: any) => c.id === classId)) setClassId("all");
+  }, [filteredClasses, classId]);
+  useEffect(() => {
+    if (studentId !== "all" && !filteredStudents.some((s: any) => s.id === studentId)) setStudentId("all");
+  }, [filteredStudents, studentId]);
+
+  const selectedStudent = useMemo(
+    () => allStudents.find((s: any) => s.id === studentId) as any,
+    [allStudents, studentId],
+  );
+  const selectedStudentClass = useMemo(
+    () => classes.find((c: any) => c.id === selectedStudent?.class_id) as any,
+    [classes, selectedStudent],
+  );
 
   const { data: violations = [] } = useQuery({
-    queryKey: ["violations-report", from, to, classId, grade, severity, typeId],
+    queryKey: ["violations-report", from, to, stage, classId, grade, studentId, severity, typeId],
     queryFn: async () => {
       let q = supabase.from("violations")
-        .select("*, students(full_name, classes(id, name, grade)), violation_types(id, name, severity)")
+        .select("*, students(id, full_name, class_id, classes(id, name, grade, stage)), violation_types(id, name, severity)")
         .gte("violation_date", from).lte("violation_date", to)
         .order("violation_date", { ascending: false });
       if (typeId !== "all") q = q.eq("type_id", typeId);
+      if (studentId !== "all") q = q.eq("student_id", studentId);
       const { data } = await q;
       let list = data ?? [];
       const ids = Array.from(new Set(list.map((v: any) => v.created_by).filter(Boolean)));
@@ -57,10 +119,12 @@ function ReportsPage() {
       }
       if (classId !== "all") list = list.filter((v: any) => v.students?.classes?.id === classId);
       if (grade !== "all") list = list.filter((v: any) => v.students?.classes?.grade === grade);
+      if (stage !== "all") list = list.filter((v: any) => v.students?.classes?.stage === stage);
       if (severity !== "all") list = list.filter((v: any) => v.violation_types?.severity === severity);
       return list;
     },
   });
+
 
 
 
@@ -108,6 +172,23 @@ function ReportsPage() {
   const actionsDone = useMemo(() => violations.filter((v: any) => v.action_taken).length, [violations]);
   const actionsPending = violations.length - actionsDone;
 
+  const scopeLabel = useMemo(() => {
+    const parts: string[] = [];
+    if (selectedStudent) parts.push(`الطالب: ${selectedStudent.full_name}`);
+    if (selectedStudent && selectedStudentClass) parts.push(`الفصل: ${selectedStudentClass.name}`);
+    else if (classId !== "all") parts.push(`الفصل: ${classes.find((c: any) => c.id === classId)?.name || ""}`);
+    if (grade !== "all") parts.push(`المستوى: ${grade}`);
+    if (stage !== "all") parts.push(stage);
+    if (severity !== "all") parts.push(`الدرجة: ${severity}`);
+    if (typeId !== "all") parts.push(`النوع: ${vtypes.find((t: any) => t.id === typeId)?.name || ""}`);
+    return parts.join(" — ");
+  }, [selectedStudent, selectedStudentClass, classId, grade, stage, severity, typeId, classes, vtypes]);
+
+  const fileSuffix = useMemo(() => {
+    const n = selectedStudent?.full_name || (classId !== "all" ? classes.find((c: any) => c.id === classId)?.name : "") || (grade !== "all" ? grade : "");
+    return `${n ? String(n).replace(/\s+/g, "_") + "_" : ""}${from}_${to}`;
+  }, [selectedStudent, classId, grade, classes, from, to]);
+
   function exportExcel() {
     const rows = violations.map((v: any, i: number) => ({
       "م": i + 1,
@@ -124,7 +205,7 @@ function ReportsPage() {
     ws["!cols"] = [{ wch: 5 }, { wch: 12 }, { wch: 22 }, { wch: 12 }, { wch: 20 }, { wch: 10 }, { wch: 30 }, { wch: 22 }, { wch: 18 }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "المخالفات");
-    XLSX.writeFile(wb, `تقرير_المخالفات_${from}_${to}.xlsx`);
+    XLSX.writeFile(wb, `تقرير_المخالفات_${fileSuffix}.xlsx`);
   }
 
   async function exportWord() {
@@ -157,10 +238,10 @@ function ReportsPage() {
       }],
     });
     const blob = await Packer.toBlob(doc);
-    saveAs(blob, `تقرير_المخالفات_${from}_${to}.docx`);
+    saveAs(blob, `تقرير_المخالفات_${fileSuffix}.docx`);
   }
 
-  function exportPDF() {
+  function buildReportHtml(autoPrint: boolean) {
     const esc = (s: string) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
 
     const school = settings.school_name?.trim() || "نظام إدارة المخالفات";
@@ -219,9 +300,12 @@ function ReportsPage() {
         h2 { color: #1d4ed8; font-size: 15px; margin: 16px 0 8px; }
       </style></head><body>
       <div class="header">
+        ${settings.logo_url ? `<img src="${esc(settings.logo_url)}" alt="شعار المدرسة" style="height:64px;object-fit:contain;margin-bottom:6px" />` : ""}
         <h1>${esc(school)}</h1>
         ${sub ? `<p>${esc(sub)}</p>` : ""}
-        <p><b>تقرير المخالفات السلوكية</b> — من ${from} إلى ${to}</p>
+        <p><b>${selectedStudent ? "التقرير السلوكي للطالب" : "تقرير المخالفات السلوكية"}</b> — من ${from} إلى ${to}</p>
+        ${selectedStudent ? `<p><b>الطالب:</b> ${esc(selectedStudent.full_name)} ${selectedStudentClass ? `— <b>الفصل:</b> ${esc(selectedStudentClass.name)}` : ""}</p>` : ""}
+        ${scopeLabel && !selectedStudent ? `<p>${esc(scopeLabel)}</p>` : ""}
       </div>
       <div class="stats">
         <div class="stat"><b>${violations.length}</b>إجمالي المخالفات</div>
@@ -239,12 +323,23 @@ function ReportsPage() {
         <tbody>${rows || `<tr><td colspan="8" style="text-align:center;padding:20px">لا توجد بيانات</td></tr>`}</tbody>
       </table>
       <div class="footer">${new Date().toLocaleDateString("ar-EG")}</div>
-      <script>window.onload = () => { setTimeout(() => window.print(), 300); };</script>
+      ${autoPrint ? `<script>window.onload = () => { setTimeout(() => window.print(), 300); };<\/script>` : ""}
       </body></html>`;
+    return html;
+  }
+
+  function exportPDF() {
     const w = window.open("", "_blank");
     if (!w) return;
+    const html = buildReportHtml(true);
     w.document.open(); w.document.write(html); w.document.close();
   }
+
+  function downloadReport() {
+    const blob = new Blob([buildReportHtml(false)], { type: "text/html;charset=utf-8" });
+    saveAs(blob, `تقرير_المخالفات_${fileSuffix}.html`);
+  }
+
 
   return (
     <div className="space-y-6">
@@ -258,6 +353,16 @@ function ReportsPage() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
             <div className="space-y-2"><Label>من تاريخ</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
             <div className="space-y-2"><Label>إلى تاريخ</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
+            <div className="space-y-2">
+              <Label>المرحلة</Label>
+              <Select value={stage} onValueChange={setStage}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">كل المراحل</SelectItem>
+                  {stages.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-2">
               <Label>المستوى / الصف</Label>
               <Select value={grade} onValueChange={setGrade}>
@@ -274,7 +379,29 @@ function ReportsPage() {
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">كل الفصول</SelectItem>
-                  {classes.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                  {filteredClasses.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>الطالب</Label>
+              <Select value={studentId} onValueChange={setStudentId}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent className="max-h-72">
+                  <div className="p-2 sticky top-0 bg-popover z-10">
+                    <Input
+                      placeholder="ابحث باسم الطالب..."
+                      value={studentSearch}
+                      onChange={(e) => setStudentSearch(e.target.value)}
+                      onKeyDown={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                  <SelectItem value="all">كل الطلاب</SelectItem>
+                  {filteredStudents.map((s: any) => (
+                    <SelectItem key={s.id} value={s.id} className="whitespace-normal break-words">
+                      {s.full_name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -297,16 +424,21 @@ function ReportsPage() {
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">كل الأنواع</SelectItem>
-                  {vtypes.map((t: any) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                  {vtypes.map((t: any) => <SelectItem key={t.id} value={t.id} className="whitespace-normal break-words">{t.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
           </div>
+          {scopeLabel && (
+            <p className="text-sm text-muted-foreground pt-1">التصفية الحالية: {scopeLabel}</p>
+          )}
           <div className="flex flex-wrap gap-2 pt-2 border-t">
             <Button variant="outline" onClick={exportExcel}><FileDown className="w-4 h-4 ml-1" /> Excel</Button>
             <Button variant="outline" onClick={exportWord}><FileText className="w-4 h-4 ml-1" /> Word</Button>
+            <Button variant="outline" onClick={downloadReport}><Download className="w-4 h-4 ml-1" /> تحميل نسخة</Button>
             <Button onClick={exportPDF}><Printer className="w-4 h-4 ml-1" /> طباعة / PDF</Button>
           </div>
+
         </CardContent>
       </Card>
 
