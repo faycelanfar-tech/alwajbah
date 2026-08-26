@@ -172,6 +172,23 @@ function ReportsPage() {
   const actionsDone = useMemo(() => violations.filter((v: any) => v.action_taken).length, [violations]);
   const actionsPending = violations.length - actionsDone;
 
+  const scopeLabel = useMemo(() => {
+    const parts: string[] = [];
+    if (selectedStudent) parts.push(`الطالب: ${selectedStudent.full_name}`);
+    if (selectedStudent && selectedStudentClass) parts.push(`الفصل: ${selectedStudentClass.name}`);
+    else if (classId !== "all") parts.push(`الفصل: ${classes.find((c: any) => c.id === classId)?.name || ""}`);
+    if (grade !== "all") parts.push(`المستوى: ${grade}`);
+    if (stage !== "all") parts.push(stage);
+    if (severity !== "all") parts.push(`الدرجة: ${severity}`);
+    if (typeId !== "all") parts.push(`النوع: ${vtypes.find((t: any) => t.id === typeId)?.name || ""}`);
+    return parts.join(" — ");
+  }, [selectedStudent, selectedStudentClass, classId, grade, stage, severity, typeId, classes, vtypes]);
+
+  const fileSuffix = useMemo(() => {
+    const n = selectedStudent?.full_name || (classId !== "all" ? classes.find((c: any) => c.id === classId)?.name : "") || (grade !== "all" ? grade : "");
+    return `${n ? String(n).replace(/\s+/g, "_") + "_" : ""}${from}_${to}`;
+  }, [selectedStudent, classId, grade, classes, from, to]);
+
   function exportExcel() {
     const rows = violations.map((v: any, i: number) => ({
       "م": i + 1,
