@@ -205,7 +205,7 @@ function ReportsPage() {
     ws["!cols"] = [{ wch: 5 }, { wch: 12 }, { wch: 22 }, { wch: 12 }, { wch: 20 }, { wch: 10 }, { wch: 30 }, { wch: 22 }, { wch: 18 }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "المخالفات");
-    XLSX.writeFile(wb, `تقرير_المخالفات_${from}_${to}.xlsx`);
+    XLSX.writeFile(wb, `تقرير_المخالفات_${fileSuffix}.xlsx`);
   }
 
   async function exportWord() {
