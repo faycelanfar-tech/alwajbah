@@ -238,10 +238,10 @@ function ReportsPage() {
       }],
     });
     const blob = await Packer.toBlob(doc);
-    saveAs(blob, `تقرير_المخالفات_${from}_${to}.docx`);
+    saveAs(blob, `تقرير_المخالفات_${fileSuffix}.docx`);
   }
 
-  function exportPDF() {
+  function buildReportHtml(autoPrint: boolean) {
     const esc = (s: string) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
 
     const school = settings.school_name?.trim() || "نظام إدارة المخالفات";
