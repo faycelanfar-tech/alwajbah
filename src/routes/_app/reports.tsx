@@ -354,6 +354,16 @@ function ReportsPage() {
             <div className="space-y-2"><Label>من تاريخ</Label><Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></div>
             <div className="space-y-2"><Label>إلى تاريخ</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
             <div className="space-y-2">
+              <Label>المرحلة</Label>
+              <Select value={stage} onValueChange={setStage}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">كل المراحل</SelectItem>
+                  {stages.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
               <Label>المستوى / الصف</Label>
               <Select value={grade} onValueChange={setGrade}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -369,7 +379,29 @@ function ReportsPage() {
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">كل الفصول</SelectItem>
-                  {classes.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                  {filteredClasses.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>الطالب</Label>
+              <Select value={studentId} onValueChange={setStudentId}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent className="max-h-72">
+                  <div className="p-2 sticky top-0 bg-popover z-10">
+                    <Input
+                      placeholder="ابحث باسم الطالب..."
+                      value={studentSearch}
+                      onChange={(e) => setStudentSearch(e.target.value)}
+                      onKeyDown={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                  <SelectItem value="all">كل الطلاب</SelectItem>
+                  {filteredStudents.map((s: any) => (
+                    <SelectItem key={s.id} value={s.id} className="whitespace-normal break-words">
+                      {s.full_name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -392,16 +424,21 @@ function ReportsPage() {
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">كل الأنواع</SelectItem>
-                  {vtypes.map((t: any) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                  {vtypes.map((t: any) => <SelectItem key={t.id} value={t.id} className="whitespace-normal break-words">{t.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
           </div>
+          {scopeLabel && (
+            <p className="text-sm text-muted-foreground pt-1">التصفية الحالية: {scopeLabel}</p>
+          )}
           <div className="flex flex-wrap gap-2 pt-2 border-t">
             <Button variant="outline" onClick={exportExcel}><FileDown className="w-4 h-4 ml-1" /> Excel</Button>
             <Button variant="outline" onClick={exportWord}><FileText className="w-4 h-4 ml-1" /> Word</Button>
+            <Button variant="outline" onClick={downloadReport}><Download className="w-4 h-4 ml-1" /> تحميل نسخة</Button>
             <Button onClick={exportPDF}><Printer className="w-4 h-4 ml-1" /> طباعة / PDF</Button>
           </div>
+
         </CardContent>
       </Card>
 
