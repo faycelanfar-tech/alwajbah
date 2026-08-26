@@ -300,9 +300,12 @@ function ReportsPage() {
         h2 { color: #1d4ed8; font-size: 15px; margin: 16px 0 8px; }
       </style></head><body>
       <div class="header">
+        ${settings.logo_url ? `<img src="${esc(settings.logo_url)}" alt="شعار المدرسة" style="height:64px;object-fit:contain;margin-bottom:6px" />` : ""}
         <h1>${esc(school)}</h1>
         ${sub ? `<p>${esc(sub)}</p>` : ""}
-        <p><b>تقرير المخالفات السلوكية</b> — من ${from} إلى ${to}</p>
+        <p><b>${selectedStudent ? "التقرير السلوكي للطالب" : "تقرير المخالفات السلوكية"}</b> — من ${from} إلى ${to}</p>
+        ${selectedStudent ? `<p><b>الطالب:</b> ${esc(selectedStudent.full_name)} ${selectedStudentClass ? `— <b>الفصل:</b> ${esc(selectedStudentClass.name)}` : ""}</p>` : ""}
+        ${scopeLabel && !selectedStudent ? `<p>${esc(scopeLabel)}</p>` : ""}
       </div>
       <div class="stats">
         <div class="stat"><b>${violations.length}</b>إجمالي المخالفات</div>
@@ -320,12 +323,23 @@ function ReportsPage() {
         <tbody>${rows || `<tr><td colspan="8" style="text-align:center;padding:20px">لا توجد بيانات</td></tr>`}</tbody>
       </table>
       <div class="footer">${new Date().toLocaleDateString("ar-EG")}</div>
-      <script>window.onload = () => { setTimeout(() => window.print(), 300); };</script>
+      ${autoPrint ? `<script>window.onload = () => { setTimeout(() => window.print(), 300); };<\/script>` : ""}
       </body></html>`;
+    return html;
+  }
+
+  function exportPDF() {
     const w = window.open("", "_blank");
     if (!w) return;
+    const html = buildReportHtml(true);
     w.document.open(); w.document.write(html); w.document.close();
   }
+
+  function downloadReport() {
+    const blob = new Blob([buildReportHtml(false)], { type: "text/html;charset=utf-8" });
+    saveAs(blob, `تقرير_المخالفات_${fileSuffix}.html`);
+  }
+
 
   return (
     <div className="space-y-6">
