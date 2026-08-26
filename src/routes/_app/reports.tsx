@@ -26,6 +26,9 @@ function ReportsPage() {
   const [to, setTo] = useState(today);
   const [classId, setClassId] = useState<string>("all");
   const [grade, setGrade] = useState<string>("all");
+  const [stage, setStage] = useState<string>("all");
+  const [studentId, setStudentId] = useState<string>("all");
+  const [studentSearch, setStudentSearch] = useState("");
   const [severity, setSeverity] = useState<string>("all");
   const [typeId, setTypeId] = useState<string>("all");
 
@@ -37,16 +40,75 @@ function ReportsPage() {
     queryKey: ["violation_types"],
     queryFn: async () => (await supabase.from("violation_types").select("*").order("name")).data ?? [],
   });
-  const grades = useMemo(() => Array.from(new Set(classes.map((c: any) => c.grade).filter(Boolean))).sort() as string[], [classes]);
+  const { data: allStudents = [] } = useQuery({
+    queryKey: ["students-all"],
+    queryFn: async () => (await supabase.from("students").select("id, full_name, class_id").order("full_name")).data ?? [],
+  });
+
+  const stages = useMemo(
+    () => Array.from(new Set(classes.map((c: any) => c.stage).filter(Boolean))).sort() as string[],
+    [classes],
+  );
+  // الصفوف الدراسية ضمن المرحلة المختارة
+  const grades = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          classes
+            .filter((c: any) => stage === "all" || c.stage === stage)
+            .map((c: any) => c.grade)
+            .filter(Boolean),
+        ),
+      ).sort() as string[],
+    [classes, stage],
+  );
+  // الفصول ضمن المرحلة + الصف المختار
+  const filteredClasses = useMemo(
+    () =>
+      classes.filter(
+        (c: any) => (stage === "all" || c.stage === stage) && (grade === "all" || c.grade === grade),
+      ),
+    [classes, stage, grade],
+  );
+  // الطلاب ضمن الفصول المتاحة
+  const filteredStudents = useMemo(() => {
+    const ids = new Set(filteredClasses.map((c: any) => c.id));
+    const list = allStudents.filter((s: any) =>
+      classId !== "all" ? s.class_id === classId : ids.has(s.class_id),
+    );
+    const q = studentSearch.trim();
+    return q ? list.filter((s: any) => (s.full_name || "").includes(q)) : list;
+  }, [allStudents, filteredClasses, classId, studentSearch]);
+
+  // إعادة الضبط عند تغيّر المستويات الأعلى
+  useEffect(() => {
+    if (grade !== "all" && !grades.includes(grade)) setGrade("all");
+  }, [grades, grade]);
+  useEffect(() => {
+    if (classId !== "all" && !filteredClasses.some((c: any) => c.id === classId)) setClassId("all");
+  }, [filteredClasses, classId]);
+  useEffect(() => {
+    if (studentId !== "all" && !filteredStudents.some((s: any) => s.id === studentId)) setStudentId("all");
+  }, [filteredStudents, studentId]);
+
+  const selectedStudent = useMemo(
+    () => allStudents.find((s: any) => s.id === studentId) as any,
+    [allStudents, studentId],
+  );
+  const selectedStudentClass = useMemo(
+    () => classes.find((c: any) => c.id === selectedStudent?.class_id) as any,
+    [classes, selectedStudent],
+  );
 
   const { data: violations = [] } = useQuery({
-    queryKey: ["violations-report", from, to, classId, grade, severity, typeId],
+    queryKey: ["violations-report", from, to, stage, classId, grade, studentId, severity, typeId],
     queryFn: async () => {
       let q = supabase.from("violations")
-        .select("*, students(full_name, classes(id, name, grade)), violation_types(id, name, severity)")
+        .select("*, students(id, full_name, class_id, classes(id, name, grade, stage)), violation_types(id, name, severity)")
         .gte("violation_date", from).lte("violation_date", to)
         .order("violation_date", { ascending: false });
       if (typeId !== "all") q = q.eq("type_id", typeId);
+      if (studentId !== "all") q = q.eq("student_id", studentId);
       const { data } = await q;
       let list = data ?? [];
       const ids = Array.from(new Set(list.map((v: any) => v.created_by).filter(Boolean)));
@@ -57,10 +119,12 @@ function ReportsPage() {
       }
       if (classId !== "all") list = list.filter((v: any) => v.students?.classes?.id === classId);
       if (grade !== "all") list = list.filter((v: any) => v.students?.classes?.grade === grade);
+      if (stage !== "all") list = list.filter((v: any) => v.students?.classes?.stage === stage);
       if (severity !== "all") list = list.filter((v: any) => v.violation_types?.severity === severity);
       return list;
     },
   });
+
 
 
 
