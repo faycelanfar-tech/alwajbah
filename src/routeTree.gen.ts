@@ -20,6 +20,7 @@ import { Route as AppStudentsRouteImport } from './routes/_app/students'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as AppRewardsRouteImport } from './routes/_app/rewards'
 import { Route as AppReportsRouteImport } from './routes/_app/reports'
+import { Route as AppPositiveRouteImport } from './routes/_app/positive'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as AppClassesRouteImport } from './routes/_app/classes'
 import { Route as AppAuditRouteImport } from './routes/_app/audit'
@@ -80,6 +81,11 @@ const AppReportsRoute = AppReportsRouteImport.update({
   path: '/reports',
   getParentRoute: () => AppRoute,
 } as any)
+const AppPositiveRoute = AppPositiveRouteImport.update({
+  id: '/positive',
+  path: '/positive',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppDashboardRoute = AppDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -115,6 +121,7 @@ export interface FileRoutesByFullPath {
   '/audit': typeof AppAuditRoute
   '/classes': typeof AppClassesRoute
   '/dashboard': typeof AppDashboardRoute
+  '/positive': typeof AppPositiveRoute
   '/reports': typeof AppReportsRoute
   '/rewards': typeof AppRewardsRoute
   '/settings': typeof AppSettingsRoute
@@ -132,6 +139,7 @@ export interface FileRoutesByTo {
   '/audit': typeof AppAuditRoute
   '/classes': typeof AppClassesRoute
   '/dashboard': typeof AppDashboardRoute
+  '/positive': typeof AppPositiveRoute
   '/reports': typeof AppReportsRoute
   '/rewards': typeof AppRewardsRoute
   '/settings': typeof AppSettingsRoute
@@ -151,6 +159,7 @@ export interface FileRoutesById {
   '/_app/audit': typeof AppAuditRoute
   '/_app/classes': typeof AppClassesRoute
   '/_app/dashboard': typeof AppDashboardRoute
+  '/_app/positive': typeof AppPositiveRoute
   '/_app/reports': typeof AppReportsRoute
   '/_app/rewards': typeof AppRewardsRoute
   '/_app/settings': typeof AppSettingsRoute
@@ -170,6 +179,7 @@ export interface FileRouteTypes {
     | '/audit'
     | '/classes'
     | '/dashboard'
+    | '/positive'
     | '/reports'
     | '/rewards'
     | '/settings'
@@ -187,6 +197,7 @@ export interface FileRouteTypes {
     | '/audit'
     | '/classes'
     | '/dashboard'
+    | '/positive'
     | '/reports'
     | '/rewards'
     | '/settings'
@@ -205,6 +216,7 @@ export interface FileRouteTypes {
     | '/_app/audit'
     | '/_app/classes'
     | '/_app/dashboard'
+    | '/_app/positive'
     | '/_app/reports'
     | '/_app/rewards'
     | '/_app/settings'
@@ -301,6 +313,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppReportsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/positive': {
+      id: '/_app/positive'
+      path: '/positive'
+      fullPath: '/positive'
+      preLoaderRoute: typeof AppPositiveRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/dashboard': {
       id: '/_app/dashboard'
       path: '/dashboard'
@@ -356,6 +375,7 @@ interface AppRouteChildren {
   AppAuditRoute: typeof AppAuditRoute
   AppClassesRoute: typeof AppClassesRoute
   AppDashboardRoute: typeof AppDashboardRoute
+  AppPositiveRoute: typeof AppPositiveRoute
   AppReportsRoute: typeof AppReportsRoute
   AppRewardsRoute: typeof AppRewardsRoute
   AppSettingsRoute: typeof AppSettingsRoute
@@ -369,6 +389,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppAuditRoute: AppAuditRoute,
   AppClassesRoute: AppClassesRoute,
   AppDashboardRoute: AppDashboardRoute,
+  AppPositiveRoute: AppPositiveRoute,
   AppReportsRoute: AppReportsRoute,
   AppRewardsRoute: AppRewardsRoute,
   AppSettingsRoute: AppSettingsRoute,
