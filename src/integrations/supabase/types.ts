@@ -181,6 +181,78 @@ export type Database = {
           },
         ]
       }
+      positive_behavior_types: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          points: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          points?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          points?: number
+        }
+        Relationships: []
+      }
+      positive_behaviors: {
+        Row: {
+          behavior_date: string
+          created_at: string
+          created_by: string | null
+          id: string
+          note: string | null
+          period: number | null
+          points: number
+          student_id: string
+          type_id: string | null
+        }
+        Insert: {
+          behavior_date?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          period?: number | null
+          points?: number
+          student_id: string
+          type_id?: string | null
+        }
+        Update: {
+          behavior_date?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          period?: number | null
+          points?: number
+          student_id?: string
+          type_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "positive_behaviors_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "positive_behaviors_type_id_fkey"
+            columns: ["type_id"]
+            isOneToOne: false
+            referencedRelation: "positive_behavior_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -324,15 +396,7 @@ export type Database = {
           old_data?: Json | null
           violation_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "violation_history_violation_id_fkey"
-            columns: ["violation_id"]
-            isOneToOne: false
-            referencedRelation: "violations"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       violation_types: {
         Row: {
