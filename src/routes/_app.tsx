@@ -24,6 +24,7 @@ function AppLayout() {
     <div className="min-h-screen flex bg-background">
       <AppSidebar />
       <main className="flex-1 min-w-0 pb-20 lg:pb-0">
+        <AppHeader />
         <div className="p-4 md:p-8 max-w-7xl mx-auto">
           <Outlet />
         </div>
