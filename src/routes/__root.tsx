@@ -11,6 +11,7 @@ import { useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/hooks/use-auth";
 import { SettingsProvider } from "@/hooks/use-settings";
+import { ThemeProvider } from "@/hooks/use-theme";
 import { supabase } from "@/integrations/supabase/client";
 import appCss from "../styles.css?url";
 
@@ -94,12 +95,14 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <SettingsProvider>
-          <Outlet />
-          <Toaster position="top-center" richColors />
-        </SettingsProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <SettingsProvider>
+            <Outlet />
+            <Toaster position="top-center" richColors />
+          </SettingsProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

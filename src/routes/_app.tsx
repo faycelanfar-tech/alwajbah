@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet, redirect, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
+import { AppHeader } from "@/components/app-header";
 import { AppSidebar, MobileBar } from "@/components/app-sidebar";
 import { useSettings } from "@/hooks/use-settings";
 
@@ -23,6 +24,7 @@ function AppLayout() {
     <div className="min-h-screen flex bg-background">
       <AppSidebar />
       <main className="flex-1 min-w-0 pb-20 lg:pb-0">
+        <AppHeader />
         <div className="p-4 md:p-8 max-w-7xl mx-auto">
           <Outlet />
         </div>
