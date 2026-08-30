@@ -259,8 +259,14 @@ function ViolationsPage() {
                                   الإجراء: {" "}
                                 </span>
                                 <span>{v.action_taken}</span>
+                                {actionBy[v.id] && (
+                                  <span className="block text-xs text-muted-foreground mt-1">
+                                    متخذ الإجراء: {actionBy[v.id].name} — {String(actionBy[v.id].at).slice(0, 10)}
+                                  </span>
+                                )}
                               </div>
                             )}
+
                           </div>
                         </TableCell>
                         <TableCell className="align-top whitespace-nowrap text-muted-foreground">
