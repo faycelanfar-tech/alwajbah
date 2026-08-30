@@ -58,8 +58,10 @@ const severityColor: Record<string, string> = {
 function ViolationsPage() {
   const { role, user } = useAuth();
   const isAdmin = role === "admin";
+  const canTakeAction = role === "admin" || role === "supervisor";
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
+
 
   const { data: violations = [] } = useQuery({
     queryKey: ["violations"],
