@@ -20,6 +20,8 @@ const COLORS = ["#1d4ed8", "#0ea5e9", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"
 
 function ReportsPage() {
   const { settings } = useSettings();
+  const { role, user, profile } = useAuth();
+  const isTeacher = role === "teacher";
   const today = new Date().toISOString().slice(0, 10);
   const monthAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
   const [from, setFrom] = useState(monthAgo);
@@ -31,6 +33,10 @@ function ReportsPage() {
   const [studentSearch, setStudentSearch] = useState("");
   const [severity, setSeverity] = useState<string>("all");
   const [typeId, setTypeId] = useState<string>("all");
+  const [period, setPeriod] = useState<string>("all");
+  const [mineOnly, setMineOnly] = useState<boolean>(false);
+  const onlyMine = isTeacher || mineOnly;
+
 
   const { data: classes = [] } = useQuery({
     queryKey: ["classes"],
