@@ -17,6 +17,12 @@ const nav: { to: string; label: string; icon: typeof LayoutDashboard; roles: str
   { to: "/settings", label: "الإعدادات", icon: SettingsIcon, roles: ["admin"] },
 ];
 
+export const ROLE_LABELS: Record<string, string> = {
+  admin: "المشرف العام",
+  supervisor: "المشرف الإداري",
+  teacher: "معلم",
+};
+
 
 export function AppSidebar() {
   const { role, profile, signOut } = useAuth();
