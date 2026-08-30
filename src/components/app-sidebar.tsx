@@ -92,14 +92,18 @@ export function MobileBar() {
         <div className="flex justify-around">
           {items.map((item) => {
             const Icon = item.icon;
-            const active = pathname === item.to;
+            const active = pathname === item.to || pathname.startsWith(item.to + "/");
             return (
-              <Link key={item.to} to={item.to as "/dashboard"} className={cn("flex flex-col items-center gap-1 py-2 px-2 flex-1 text-xs", active ? "text-primary" : "text-muted-foreground")}>
-                <Icon className="w-5 h-5" />
+              <Link key={item.to} to={item.to as "/dashboard"} className={cn("relative flex flex-col items-center gap-1 py-2 px-2 flex-1 text-xs", active ? "text-primary font-bold" : "text-muted-foreground")}>
+                {active && <span className="absolute top-0 inset-x-3 h-0.5 rounded-full bg-primary" />}
+                <span className={cn("p-1 rounded-lg", active && "bg-primary/10")}>
+                  <Icon className="w-5 h-5" />
+                </span>
                 <span className="truncate">{item.label}</span>
               </Link>
             );
           })}
+
         </div>
       </div>
       <button onClick={signOut} aria-label="خروج" className="lg:hidden fixed top-3 left-3 z-50 p-2 rounded-full bg-card shadow-card text-destructive">
