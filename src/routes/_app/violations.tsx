@@ -106,6 +106,24 @@ function ViolationsPage() {
       ).data ?? [],
   });
 
+  // من اتخذ الإجراء لكل مخالفة (آخر تعيين إجراء)
+  const { data: actionBy = {} as Record<string, { name: string; at: string }> } = useQuery({
+    queryKey: ["violation-action-takers"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("violation_history")
+        .select("violation_id, changed_by_name, created_at, action")
+        .eq("action", "action_set")
+        .order("created_at", { ascending: false });
+      const map: Record<string, { name: string; at: string }> = {};
+      (data ?? []).forEach((h: any) => {
+        if (!map[h.violation_id]) map[h.violation_id] = { name: h.changed_by_name || "—", at: h.created_at };
+      });
+      return map;
+    },
+  });
+
+
   const filtered = violations.filter(
     (v: any) =>
       !search ||
