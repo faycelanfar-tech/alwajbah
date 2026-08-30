@@ -282,7 +282,7 @@ function ViolationsPage() {
                         <TableCell className="align-top">
                           <div className="flex items-center gap-1 flex-wrap">
                             <HistoryDialog violation={v} />
-                            {canEdit && <ActionTakenDialog violation={v} />}
+                            {canTakeAction && canEdit && <ActionTakenDialog violation={v} />}
                             {canDelete && (
                               <Button
                                 size="icon"
