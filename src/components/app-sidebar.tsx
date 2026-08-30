@@ -43,23 +43,25 @@ export function AppSidebar() {
 
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
         {nav.filter((n) => !role || n.roles.includes(role)).map((item) => {
-          const active = pathname === item.to;
+          const active = pathname === item.to || pathname.startsWith(item.to + "/");
           const Icon = item.icon;
           return (
             <Link key={item.to} to={item.to as "/dashboard"}
+              aria-current={active ? "page" : undefined}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                "relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors",
                 active
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-card"
-                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+                  ? "bg-primary/10 text-primary font-bold shadow-card before:absolute before:right-0 before:top-1.5 before:bottom-1.5 before:w-1 before:rounded-full before:bg-primary"
+                  : "text-sidebar-foreground/70 font-medium hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
               )}
             >
-              <Icon className="w-4 h-4" />
+              <Icon className={cn("w-4 h-4", active && "text-primary")} />
               {item.label}
             </Link>
           );
         })}
       </nav>
+
 
       <div className="p-3 border-t border-sidebar-border">
         <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-sidebar-accent/30 mb-2">
