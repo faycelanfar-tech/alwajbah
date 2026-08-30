@@ -17,6 +17,12 @@ const nav: { to: string; label: string; icon: typeof LayoutDashboard; roles: str
   { to: "/settings", label: "الإعدادات", icon: SettingsIcon, roles: ["admin"] },
 ];
 
+export const ROLE_LABELS: Record<string, string> = {
+  admin: "المشرف العام",
+  supervisor: "المشرف الإداري",
+  teacher: "معلم",
+};
+
 
 export function AppSidebar() {
   const { role, profile, signOut } = useAuth();
@@ -43,23 +49,25 @@ export function AppSidebar() {
 
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
         {nav.filter((n) => !role || n.roles.includes(role)).map((item) => {
-          const active = pathname === item.to;
+          const active = pathname === item.to || pathname.startsWith(item.to + "/");
           const Icon = item.icon;
           return (
             <Link key={item.to} to={item.to as "/dashboard"}
+              aria-current={active ? "page" : undefined}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                "relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors",
                 active
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-card"
-                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+                  ? "bg-primary/10 text-primary font-bold shadow-card before:absolute before:right-0 before:top-1.5 before:bottom-1.5 before:w-1 before:rounded-full before:bg-primary"
+                  : "text-sidebar-foreground/70 font-medium hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
               )}
             >
-              <Icon className="w-4 h-4" />
+              <Icon className={cn("w-4 h-4", active && "text-primary")} />
               {item.label}
             </Link>
           );
         })}
       </nav>
+
 
       <div className="p-3 border-t border-sidebar-border">
         <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-sidebar-accent/30 mb-2">
@@ -68,7 +76,7 @@ export function AppSidebar() {
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium truncate">{profile?.full_name || profile?.username}</p>
-            <p className="text-xs text-sidebar-foreground/60">{role === "admin" ? "مدير النظام" : "معلم"}</p>
+            <p className="text-xs text-sidebar-foreground/60">{ROLE_LABELS[role ?? ""] ?? "مستخدم"}</p>
           </div>
         </div>
         <button onClick={signOut} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-destructive hover:bg-destructive/10 transition-colors">
@@ -90,14 +98,18 @@ export function MobileBar() {
         <div className="flex justify-around">
           {items.map((item) => {
             const Icon = item.icon;
-            const active = pathname === item.to;
+            const active = pathname === item.to || pathname.startsWith(item.to + "/");
             return (
-              <Link key={item.to} to={item.to as "/dashboard"} className={cn("flex flex-col items-center gap-1 py-2 px-2 flex-1 text-xs", active ? "text-primary" : "text-muted-foreground")}>
-                <Icon className="w-5 h-5" />
+              <Link key={item.to} to={item.to as "/dashboard"} className={cn("relative flex flex-col items-center gap-1 py-2 px-2 flex-1 text-xs", active ? "text-primary font-bold" : "text-muted-foreground")}>
+                {active && <span className="absolute top-0 inset-x-3 h-0.5 rounded-full bg-primary" />}
+                <span className={cn("p-1 rounded-lg", active && "bg-primary/10")}>
+                  <Icon className="w-5 h-5" />
+                </span>
                 <span className="truncate">{item.label}</span>
               </Link>
             );
           })}
+
         </div>
       </div>
       <button onClick={signOut} aria-label="خروج" className="lg:hidden fixed top-3 left-3 z-50 p-2 rounded-full bg-card shadow-card text-destructive">
