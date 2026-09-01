@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { User, Lock, Loader2, School } from "lucide-react";
 import { toast } from "sonner";
+import { DEVELOPER_CREDIT } from "@/lib/branding";
+
 
 export const Route = createFileRoute("/login")({
   head: () => ({
