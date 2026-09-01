@@ -1,27 +1,29 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { useSettings } from "@/hooks/use-settings";
-import { LayoutDashboard, Users, GraduationCap, AlertTriangle, FileBarChart, Settings as SettingsIcon, LogOut, UserCog, School, Trophy, ClipboardCheck, History } from "lucide-react";
+import { LayoutDashboard, Users, GraduationCap, AlertTriangle, FileBarChart, Settings as SettingsIcon, LogOut, UserCog, School, Trophy, ClipboardCheck, History, Sparkles, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ROLE_LABELS, READONLY_ROLES } from "@/lib/branding";
+
+const VIEWERS = ["admin", "supervisor", "teacher", ...READONLY_ROLES];
 
 const nav: { to: string; label: string; icon: typeof LayoutDashboard; roles: string[] }[] = [
-  { to: "/dashboard", label: "الرئيسية", icon: LayoutDashboard, roles: ["admin", "supervisor", "teacher"] },
-  { to: "/violations", label: "المخالفات", icon: AlertTriangle, roles: ["admin", "supervisor", "teacher"] },
-  { to: "/actions", label: "الإجراءات", icon: ClipboardCheck, roles: ["admin", "supervisor"] },
+  { to: "/dashboard", label: "الرئيسية", icon: LayoutDashboard, roles: VIEWERS },
+  { to: "/violations", label: "المخالفات", icon: AlertTriangle, roles: VIEWERS },
+  { to: "/actions", label: "الإجراءات", icon: ClipboardCheck, roles: ["admin", "supervisor", ...READONLY_ROLES] },
+  { to: "/positive", label: "السلوك الإيجابي", icon: Sparkles, roles: VIEWERS },
+  { to: "/academic", label: "التقرير الأكاديمي", icon: BookOpen, roles: VIEWERS },
   { to: "/rewards", label: "النقاط والمكافآت", icon: Trophy, roles: ["admin", "teacher"] },
   { to: "/students", label: "الطلاب", icon: GraduationCap, roles: ["admin", "teacher"] },
   { to: "/classes", label: "الفصول", icon: Users, roles: ["admin"] },
   { to: "/teachers", label: "المعلمون والحسابات", icon: UserCog, roles: ["admin"] },
-  { to: "/reports", label: "التقارير", icon: FileBarChart, roles: ["admin", "supervisor", "teacher"] },
+  { to: "/reports", label: "التقارير", icon: FileBarChart, roles: VIEWERS },
   { to: "/audit", label: "سجل النشاط", icon: History, roles: ["admin"] },
   { to: "/settings", label: "الإعدادات", icon: SettingsIcon, roles: ["admin"] },
 ];
 
-export const ROLE_LABELS: Record<string, string> = {
-  admin: "المشرف العام",
-  supervisor: "المشرف الإداري",
-  teacher: "معلم",
-};
+export { ROLE_LABELS };
+
 
 
 export function AppSidebar() {

@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { AppHeader } from "@/components/app-header";
 import { AppSidebar, MobileBar } from "@/components/app-sidebar";
 import { useSettings } from "@/hooks/use-settings";
+import { DEVELOPER_CREDIT } from "@/lib/branding";
 
 export const Route = createFileRoute("/_app")({ component: AppLayout });
 
@@ -29,7 +30,7 @@ function AppLayout() {
           <Outlet />
         </div>
         <footer className="text-center text-xs text-muted-foreground py-6 border-t mt-8">
-          تطوير: فيصل أحمد عنفار
+          {DEVELOPER_CREDIT}
         </footer>
       </main>
       <MobileBar />

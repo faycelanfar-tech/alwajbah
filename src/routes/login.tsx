@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { User, Lock, Loader2, School } from "lucide-react";
 import { toast } from "sonner";
+import { DEVELOPER_CREDIT } from "@/lib/branding";
+
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -103,7 +105,7 @@ function LoginPage() {
           </CardContent>
         </Card>
 
-        <p className="text-center mt-6 text-white/70 text-sm">تطوير: فيصل أحمد عنفار</p>
+        <p className="text-center mt-6 text-white/70 text-sm">{DEVELOPER_CREDIT}</p>
       </div>
     </div>
   );

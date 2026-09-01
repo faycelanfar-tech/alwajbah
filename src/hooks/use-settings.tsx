@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { DEVELOPER_CREDIT } from "@/lib/branding";
 
 interface Settings {
   school_name: string;
@@ -13,7 +14,7 @@ const defaults: Settings = {
   school_name: "",
   subtitle: "نظام إدارة المخالفات السلوكية",
   logo_url: null,
-  footer_text: "تطوير: فيصل أحمد عنفار",
+  footer_text: DEVELOPER_CREDIT,
   primary_color: "#1d4ed8",
 };
 
