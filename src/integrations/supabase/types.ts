@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      academic_reports: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          level: string
+          month: string
+          note: string | null
+          student_id: string
+          subject_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          level: string
+          month: string
+          note?: string | null
+          student_id: string
+          subject_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          level?: string
+          month?: string
+          note?: string | null
+          student_id?: string
+          subject_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academic_reports_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "academic_reports_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       app_settings: {
         Row: {
           footer_text: string | null
@@ -344,6 +395,27 @@ export type Database = {
           },
         ]
       }
+      subjects: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -487,7 +559,15 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "teacher" | "supervisor"
+      app_role:
+        | "admin"
+        | "teacher"
+        | "supervisor"
+        | "academic_deputy"
+        | "admin_deputy"
+        | "student_affairs"
+        | "social_specialist"
+        | "psych_specialist"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -615,7 +695,16 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "teacher", "supervisor"],
+      app_role: [
+        "admin",
+        "teacher",
+        "supervisor",
+        "academic_deputy",
+        "admin_deputy",
+        "student_affairs",
+        "social_specialist",
+        "psych_specialist",
+      ],
     },
   },
 } as const
