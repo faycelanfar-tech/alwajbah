@@ -99,6 +99,7 @@ function SettingsPage() {
 function SubjectsCard() {
   const qc = useQueryClient();
   const [name, setName] = useState("");
+  const [edits, setEdits] = useState<Record<string, string>>({});
 
   const { data: subjects = [] } = useQuery({
     queryKey: ["subjects"],
