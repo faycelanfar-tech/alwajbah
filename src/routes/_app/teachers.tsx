@@ -18,11 +18,14 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/teachers")({ component: TeachersPage });
 
+const emptyForm = { username: "", full_name: "", password: "", email: "", role: "teacher" as string, subject_id: "", class_ids: [] as string[] };
+
 function TeachersPage() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ username: "", full_name: "", password: "", email: "", role: "teacher" as string });
+  const [form, setForm] = useState(emptyForm);
   const [resetUser, setResetUser] = useState<{ id: string; username: string } | null>(null);
+  const [assignUser, setAssignUser] = useState<{ id: string; name: string } | null>(null);
   const [newPwd, setNewPwd] = useState("");
   const resetFn = useServerFn(adminResetUserPassword);
 
@@ -35,8 +38,26 @@ function TeachersPage() {
     },
   });
 
+  const { data: subjects = [] } = useQuery({
+    queryKey: ["subjects"],
+    queryFn: async () => (await supabase.from("subjects").select("*").order("sort_order")).data ?? [],
+  });
+  const { data: classes = [] } = useQuery({
+    queryKey: ["classes"],
+    queryFn: async () => (await supabase.from("classes").select("*").order("name")).data ?? [],
+  });
+  const { data: tSubjects = [] } = useQuery({
+    queryKey: ["teacher_subjects"],
+    queryFn: async () => (await supabase.from("teacher_subjects").select("*")).data ?? [],
+  });
+  const { data: tClasses = [] } = useQuery({
+    queryKey: ["teacher_classes"],
+    queryFn: async () => (await supabase.from("teacher_classes").select("*")).data ?? [],
+  });
+
   const add = useMutation({
     mutationFn: async () => {
+      if (form.role === "teacher" && !form.subject_id) throw new Error("اختر المادة التي يدرّسها المعلم");
       const email = `${form.username.toLowerCase().trim()}@alwajbah.local`;
       const { data, error } = await supabase.auth.signUp({
         email, password: form.password,
@@ -55,11 +76,19 @@ function TeachersPage() {
         // Remove default teacher role if it was assigned
         await supabase.from("user_roles").delete().eq("user_id", data.user.id).eq("role", "teacher");
       }
+      if (data.user && form.role === "teacher") {
+        await supabase.from("teacher_subjects").insert({ user_id: data.user.id, subject_id: form.subject_id });
+        if (form.class_ids.length) {
+          await supabase.from("teacher_classes").insert(form.class_ids.map((c) => ({ user_id: data.user!.id, class_id: c })));
+        }
+      }
     },
     onSuccess: () => {
       toast.success("تم إنشاء الحساب بنجاح");
       qc.invalidateQueries({ queryKey: ["users"] });
-      setOpen(false); setForm({ username: "", full_name: "", password: "", email: "", role: "teacher" });
+      qc.invalidateQueries({ queryKey: ["teacher_subjects"] });
+      qc.invalidateQueries({ queryKey: ["teacher_classes"] });
+      setOpen(false); setForm(emptyForm);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -125,6 +154,39 @@ function TeachersPage() {
                   </SelectContent>
                 </Select>
               </div>
+              {form.role === "teacher" && (
+                <>
+                  <div className="space-y-2">
+                    <Label>المادة التي يدرّسها *</Label>
+                    <Select value={form.subject_id} onValueChange={(v) => setForm({ ...form, subject_id: v })}>
+                      <SelectTrigger><SelectValue placeholder="اختر المادة" /></SelectTrigger>
+                      <SelectContent>
+                        {subjects.map((s: any) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    {subjects.length === 0 && <p className="text-xs text-amber-600">أضف المواد أولاً من صفحة الإعدادات.</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label>الصفوف التي يدرّسها</Label>
+                    <div className="max-h-40 overflow-y-auto border rounded-lg p-2 grid grid-cols-2 gap-1">
+                      {classes.map((c: any) => {
+                        const checked = form.class_ids.includes(c.id);
+                        return (
+                          <label key={c.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => setForm({ ...form, class_ids: checked ? form.class_ids.filter((x) => x !== c.id) : [...form.class_ids, c.id] })}
+                            />
+                            {c.name}
+                          </label>
+                        );
+                      })}
+                      {classes.length === 0 && <p className="text-xs text-muted-foreground">لا توجد فصول</p>}
+                    </div>
+                  </div>
+                </>
+              )}
               <div className="space-y-2"><Label>البريد الإلكتروني (اختياري)</Label><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="user@example.com" /></div>
               <div className="space-y-2"><Label>كلمة المرور *</Label><Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} minLength={6} /></div>
               <p className="text-xs text-muted-foreground">⚠️ بعد الحفظ قد يتم تسجيل دخولك بالحساب الجديد. سجّل خروج وادخل مرة أخرى بحسابك.</p>
@@ -167,6 +229,19 @@ function TeachersPage() {
                   <KeyRound className="w-4 h-4 ml-1" /> كلمة المرور
                 </Button>
               </div>
+              {u.role === "teacher" && (
+                <div className="text-xs text-muted-foreground space-y-1">
+                  <p>
+                    المادة: {subjects.filter((s: any) => tSubjects.some((t: any) => t.user_id === u.id && t.subject_id === s.id)).map((s: any) => s.name).join("، ") || "—"}
+                  </p>
+                  <p>
+                    الصفوف: {classes.filter((c: any) => tClasses.some((t: any) => t.user_id === u.id && t.class_id === c.id)).map((c: any) => c.name).join("، ") || "—"}
+                  </p>
+                  <Button variant="outline" size="sm" className="w-full" onClick={() => setAssignUser({ id: u.id, name: u.full_name || u.username })}>
+                    تعديل المواد والصفوف
+                  </Button>
+                </div>
+              )}
               <Button
                 variant={active ? "outline" : "default"}
                 size="sm"
@@ -197,6 +272,88 @@ function TeachersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {assignUser && (
+        <AssignDialog
+          user={assignUser}
+          onClose={() => setAssignUser(null)}
+          subjects={subjects}
+          classes={classes}
+          currentSubjects={tSubjects.filter((t: any) => t.user_id === assignUser.id).map((t: any) => t.subject_id)}
+          currentClasses={tClasses.filter((t: any) => t.user_id === assignUser.id).map((t: any) => t.class_id)}
+        />
+      )}
     </div>
+  );
+}
+
+function AssignDialog({ user, onClose, subjects, classes, currentSubjects, currentClasses }: {
+  user: { id: string; name: string };
+  onClose: () => void;
+  subjects: any[];
+  classes: any[];
+  currentSubjects: string[];
+  currentClasses: string[];
+}) {
+  const qc = useQueryClient();
+  const [subjectIds, setSubjectIds] = useState<string[]>(currentSubjects);
+  const [classIds, setClassIds] = useState<string[]>(currentClasses);
+
+  const save = useMutation({
+    mutationFn: async () => {
+      await supabase.from("teacher_subjects").delete().eq("user_id", user.id);
+      await supabase.from("teacher_classes").delete().eq("user_id", user.id);
+      if (subjectIds.length) {
+        const { error } = await supabase.from("teacher_subjects").insert(subjectIds.map((s) => ({ user_id: user.id, subject_id: s })));
+        if (error) throw error;
+      }
+      if (classIds.length) {
+        const { error } = await supabase.from("teacher_classes").insert(classIds.map((c) => ({ user_id: user.id, class_id: c })));
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success("تم حفظ المواد والصفوف");
+      qc.invalidateQueries({ queryKey: ["teacher_subjects"] });
+      qc.invalidateQueries({ queryKey: ["teacher_classes"] });
+      onClose();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const toggle = (list: string[], set: (v: string[]) => void, id: string) =>
+    set(list.includes(id) ? list.filter((x) => x !== id) : [...list, id]);
+
+  return (
+    <Dialog open onOpenChange={(v) => !v && onClose()}>
+      <DialogContent>
+        <DialogHeader><DialogTitle>المواد والصفوف — {user.name}</DialogTitle></DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label>المواد</Label>
+            <div className="max-h-36 overflow-y-auto border rounded-lg p-2 grid grid-cols-2 gap-1">
+              {subjects.map((s: any) => (
+                <label key={s.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input type="checkbox" checked={subjectIds.includes(s.id)} onChange={() => toggle(subjectIds, setSubjectIds, s.id)} />
+                  {s.name}
+                </label>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>الصفوف</Label>
+            <div className="max-h-36 overflow-y-auto border rounded-lg p-2 grid grid-cols-2 gap-1">
+              {classes.map((c: any) => (
+                <label key={c.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input type="checkbox" checked={classIds.includes(c.id)} onChange={() => toggle(classIds, setClassIds, c.id)} />
+                  {c.name}
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+        <DialogFooter><Button onClick={() => save.mutate()} disabled={save.isPending}>حفظ</Button></DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useSettings } from "@/hooks/use-settings";
@@ -44,14 +44,45 @@ function AcademicPage() {
 
   const monthDate = `${month}-01`;
 
-  const { data: classes = [] } = useQuery({
+  const { data: allClasses = [] } = useQuery({
     queryKey: ["classes"],
     queryFn: async () => (await supabase.from("classes").select("*").order("name")).data ?? [],
   });
-  const { data: subjects = [] } = useQuery({
+  const { data: allSubjects = [] } = useQuery({
     queryKey: ["subjects"],
     queryFn: async () => (await supabase.from("subjects").select("*").order("sort_order")).data ?? [],
   });
+
+  // المعلم يرى مادته وصفوفه فقط
+  const isTeacher = role === "teacher";
+  const { data: myAssign } = useQuery({
+    queryKey: ["my-assignments", user?.id],
+    enabled: !!user?.id && isTeacher,
+    queryFn: async () => {
+      const [s, c] = await Promise.all([
+        supabase.from("teacher_subjects").select("subject_id").eq("user_id", user!.id),
+        supabase.from("teacher_classes").select("class_id").eq("user_id", user!.id),
+      ]);
+      return {
+        subjectIds: (s.data ?? []).map((r: any) => r.subject_id),
+        classIds: (c.data ?? []).map((r: any) => r.class_id),
+      };
+    },
+  });
+
+  const subjects = isTeacher && myAssign?.subjectIds.length
+    ? allSubjects.filter((s: any) => myAssign.subjectIds.includes(s.id))
+    : allSubjects;
+  const classes = isTeacher && myAssign?.classIds.length
+    ? allClasses.filter((c: any) => myAssign.classIds.includes(c.id))
+    : allClasses;
+
+  // اختيار تلقائي عند وجود خيار واحد للمعلم
+  useEffect(() => {
+    if (!isTeacher) return;
+    if (!subjectId && subjects.length === 1) setSubjectId(subjects[0].id);
+    if (!classId && classes.length === 1) setClassId(classes[0].id);
+  }, [isTeacher, subjects, classes, subjectId, classId]);
   const { data: students = [] } = useQuery({
     queryKey: ["students-class", classId],
     enabled: !!classId,

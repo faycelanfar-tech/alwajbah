@@ -54,3 +54,25 @@ export const LEVEL_STYLES: Record<string, string> = {
   "متوسط": "bg-amber-100 text-amber-700 border-amber-200",
   "ضعيف": "bg-rose-100 text-rose-700 border-rose-200",
 };
+
+/** لوحة ألوان موحّدة للرسوم البيانية في التقارير */
+export const CHART_COLORS = [
+  "#2563eb", "#0ea5e9", "#10b981", "#f59e0b",
+  "#ef4444", "#8b5cf6", "#ec4899", "#14b8a6",
+];
+
+/** ألوان مستويات التقرير الأكاديمي */
+export const LEVEL_COLORS: Record<string, string> = {
+  "ممتاز": "#10b981",
+  "جيد": "#2563eb",
+  "متوسط": "#f59e0b",
+  "ضعيف": "#ef4444",
+};
+
+/** ألوان درجات المخالفات */
+export const SEVERITY_COLORS: Record<string, string> = {
+  "الأولى": "#10b981",
+  "الثانية": "#f59e0b",
+  "الثالثة": "#f97316",
+  "الرابعة": "#ef4444",
+};

@@ -47,6 +47,13 @@ function ActionsPage() {
     },
   });
 
+  const { data: templates = [] } = useQuery({
+    queryKey: ["action-templates"],
+    queryFn: async () => (await supabase.from("action_templates").select("*").order("created_at")).data ?? [],
+  });
+  const options: string[] = templates.length
+    ? templates.map((t: any) => t.text)
+    : (ACTION_OPTIONS as readonly string[]).slice();
 
   const pending = violations.filter((v: any) => !v.action_taken);
   const done = violations.filter((v: any) => v.action_taken);
@@ -68,15 +75,21 @@ function ActionsPage() {
         <TabsList>
           <TabsTrigger value="pending">بانتظار إجراء ({pending.length})</TabsTrigger>
           <TabsTrigger value="done">تم اتخاذ إجراء ({done.length})</TabsTrigger>
+          {!readOnly && <TabsTrigger value="templates">الإجراءات المحفوظة ({templates.length})</TabsTrigger>}
         </TabsList>
         <TabsContent value="pending" className="space-y-3 mt-4">
           {pending.length === 0 && <EmptyState text="لا توجد مخالفات بانتظار الإجراء" />}
-          {pending.map((v: any) => <ViolationCard key={v.id} v={v} readOnly={readOnly} />)}
+          {pending.map((v: any) => <ViolationCard key={v.id} v={v} readOnly={readOnly} options={options} />)}
         </TabsContent>
         <TabsContent value="done" className="space-y-3 mt-4">
           {done.length === 0 && <EmptyState text="لم يتم تسجيل أي إجراء بعد" />}
-          {done.map((v: any) => <ViolationCard key={v.id} v={v} readOnly={readOnly} />)}
+          {done.map((v: any) => <ViolationCard key={v.id} v={v} readOnly={readOnly} options={options} />)}
         </TabsContent>
+        {!readOnly && (
+          <TabsContent value="templates" className="mt-4">
+            <TemplatesManager templates={templates} />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );
@@ -101,9 +114,9 @@ function EmptyState({ text }: { text: string }) {
   return <p className="text-center text-muted-foreground py-12">{text}</p>;
 }
 
-function ViolationCard({ v, readOnly }: { v: any; readOnly?: boolean }) {
+function ViolationCard({ v, readOnly, options = [] }: { v: any; readOnly?: boolean; options?: string[] }) {
   const qc = useQueryClient();
-  const preset = v.action_taken && (ACTION_OPTIONS as readonly string[]).includes(String(v.action_taken).split(" — ")[0])
+  const preset = v.action_taken && options.includes(String(v.action_taken).split(" — ")[0])
     ? String(v.action_taken).split(" — ")[0] : (v.action_taken ? CUSTOM_ACTION : "");
   const [action, setAction] = useState<string>(preset);
   const [notes, setNotes] = useState<string>(() => {
@@ -114,14 +127,23 @@ function ViolationCard({ v, readOnly }: { v: any; readOnly?: boolean }) {
 
   const save = useMutation({
     mutationFn: async () => {
-      const final = action === CUSTOM_ACTION ? notes.trim() : [action, notes.trim()].filter(Boolean).join(" — ");
+      const custom = action === CUSTOM_ACTION;
+      const final = custom ? notes.trim() : [action, notes.trim()].filter(Boolean).join(" — ");
       if (!final) throw new Error("اكتب أو اختر الإجراء أولاً");
       const { error } = await supabase.from("violations").update({ action_taken: final }).eq("id", v.id);
       if (error) throw error;
+      // حفظ نص الإجراء المخصص ليظهر لاحقاً في القائمة المنسدلة
+      if (custom) {
+        const text = notes.trim();
+        if (text.length <= 200 && !options.includes(text)) {
+          await supabase.from("action_templates").insert({ text });
+        }
+      }
     },
     onSuccess: () => {
       toast.success("تم تسجيل الإجراء");
       qc.invalidateQueries({ queryKey: ["violations-actions"] });
+      qc.invalidateQueries({ queryKey: ["action-templates"] });
       qc.invalidateQueries({ queryKey: ["violations"] });
     },
     onError: (e: any) => toast.error(e.message),
@@ -184,7 +206,7 @@ function ViolationCard({ v, readOnly }: { v: any; readOnly?: boolean }) {
                 <Select value={action} onValueChange={setAction}>
                   <SelectTrigger><SelectValue placeholder="اختر الإجراء" /></SelectTrigger>
                   <SelectContent>
-                    {ACTION_OPTIONS.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+                    {options.map((a) => <SelectItem key={a} value={a} className="whitespace-normal break-words">{a}</SelectItem>)}
                     <SelectItem value={CUSTOM_ACTION}>✏️ إجراء مخصص (كتابة يدوية)</SelectItem>
                   </SelectContent>
                 </Select>
@@ -211,6 +233,74 @@ function ViolationCard({ v, readOnly }: { v: any; readOnly?: boolean }) {
             </div>
           </>
         )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function TemplatesManager({ templates }: { templates: any[] }) {
+  const qc = useQueryClient();
+  const [text, setText] = useState("");
+  const [editing, setEditing] = useState<Record<string, string>>({});
+  const done = () => qc.invalidateQueries({ queryKey: ["action-templates"] });
+
+  const add = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("action_templates").insert({ text: text.trim() });
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("تمت إضافة الإجراء"); setText(""); done(); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const update = useMutation({
+    mutationFn: async ({ id, value }: { id: string; value: string }) => {
+      const { error } = await supabase.from("action_templates").update({ text: value.trim() }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("تم تحديث الإجراء"); done(); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const remove = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("action_templates").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("تم حذف الإجراء"); done(); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  return (
+    <Card className="border-0 shadow-card">
+      <CardHeader><CardTitle>الإجراءات المحفوظة (تظهر في القائمة المنسدلة)</CardTitle></CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex gap-2 items-end flex-wrap">
+          <div className="flex-1 min-w-[240px] space-y-2">
+            <Label>إضافة إجراء جديد (يمكن اللصق)</Label>
+            <Textarea rows={2} value={text} onChange={(e) => setText(e.target.value)} placeholder="الصق أو اكتب نص الإجراء..." />
+          </div>
+          <Button onClick={() => add.mutate()} disabled={!text.trim() || add.isPending}>إضافة</Button>
+        </div>
+        <div className="space-y-2">
+          {templates.map((t: any) => {
+            const value = editing[t.id] ?? t.text;
+            return (
+              <div key={t.id} className="flex gap-2 items-center border rounded-lg p-2 flex-wrap">
+                <Textarea
+                  rows={1}
+                  className="flex-1 min-w-[200px]"
+                  value={value}
+                  onChange={(e) => setEditing({ ...editing, [t.id]: e.target.value })}
+                />
+                <Button size="sm" variant="outline" disabled={value.trim() === t.text || !value.trim()} onClick={() => update.mutate({ id: t.id, value })}>حفظ</Button>
+                <Button size="sm" variant="ghost" onClick={() => { navigator.clipboard.writeText(t.text); toast.success("تم النسخ"); }}><Copy className="w-4 h-4" /></Button>
+                <Button size="sm" variant="ghost" className="text-rose-600" onClick={() => remove.mutate(t.id)}>حذف</Button>
+              </div>
+            );
+          })}
+          {templates.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">لا توجد إجراءات محفوظة</p>}
+        </div>
       </CardContent>
     </Card>
   );
