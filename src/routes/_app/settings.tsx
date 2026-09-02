@@ -8,7 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Upload, Loader2 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Upload, Loader2, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/_app/settings")({ component: SettingsPage });
 
@@ -89,6 +90,60 @@ function SettingsPage() {
           </Button>
         </CardContent>
       </Card>
+
+      <SubjectsCard />
     </div>
   );
 }
+
+function SubjectsCard() {
+  const qc = useQueryClient();
+  const [name, setName] = useState("");
+
+  const { data: subjects = [] } = useQuery({
+    queryKey: ["subjects"],
+    queryFn: async () => (await supabase.from("subjects").select("*").order("sort_order")).data ?? [],
+  });
+
+  const add = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("subjects").insert({ name: name.trim(), sort_order: subjects.length });
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("تمت إضافة المادة"); setName(""); qc.invalidateQueries({ queryKey: ["subjects"] }); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const remove = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("subjects").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("تم حذف المادة"); qc.invalidateQueries({ queryKey: ["subjects"] }); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  return (
+    <Card className="border-0 shadow-card">
+      <CardHeader><CardTitle>المواد الدراسية</CardTitle></CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex gap-2">
+          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="اسم المادة" />
+          <Button onClick={() => add.mutate()} disabled={!name.trim() || add.isPending}>إضافة</Button>
+        </div>
+        <div className="space-y-2">
+          {subjects.map((s: any) => (
+            <div key={s.id} className="flex items-center justify-between border rounded-lg p-2">
+              <span className="font-medium">{s.name}</span>
+              <Button variant="ghost" size="sm" className="text-rose-600" onClick={() => remove.mutate(s.id)}>
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+          ))}
+          {subjects.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">لا توجد مواد بعد</p>}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+

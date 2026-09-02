@@ -25,6 +25,7 @@ import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as AppClassesRouteImport } from './routes/_app/classes'
 import { Route as AppAuditRouteImport } from './routes/_app/audit'
 import { Route as AppActionsRouteImport } from './routes/_app/actions'
+import { Route as AppAcademicRouteImport } from './routes/_app/academic'
 import { Route as AppStudentsIdRouteImport } from './routes/_app/students.$id'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -106,6 +107,11 @@ const AppActionsRoute = AppActionsRouteImport.update({
   path: '/actions',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAcademicRoute = AppAcademicRouteImport.update({
+  id: '/academic',
+  path: '/academic',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppStudentsIdRoute = AppStudentsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -117,6 +123,7 @@ export interface FileRoutesByFullPath {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/academic': typeof AppAcademicRoute
   '/actions': typeof AppActionsRoute
   '/audit': typeof AppAuditRoute
   '/classes': typeof AppClassesRoute
@@ -135,6 +142,7 @@ export interface FileRoutesByTo {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/academic': typeof AppAcademicRoute
   '/actions': typeof AppActionsRoute
   '/audit': typeof AppAuditRoute
   '/classes': typeof AppClassesRoute
@@ -155,6 +163,7 @@ export interface FileRoutesById {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/_app/academic': typeof AppAcademicRoute
   '/_app/actions': typeof AppActionsRoute
   '/_app/audit': typeof AppAuditRoute
   '/_app/classes': typeof AppClassesRoute
@@ -175,6 +184,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/reset-password'
+    | '/academic'
     | '/actions'
     | '/audit'
     | '/classes'
@@ -193,6 +203,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/reset-password'
+    | '/academic'
     | '/actions'
     | '/audit'
     | '/classes'
@@ -212,6 +223,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/reset-password'
+    | '/_app/academic'
     | '/_app/actions'
     | '/_app/audit'
     | '/_app/classes'
@@ -348,6 +360,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppActionsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/academic': {
+      id: '/_app/academic'
+      path: '/academic'
+      fullPath: '/academic'
+      preLoaderRoute: typeof AppAcademicRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/students/$id': {
       id: '/_app/students/$id'
       path: '/$id'
@@ -371,6 +390,7 @@ const AppStudentsRouteWithChildren = AppStudentsRoute._addFileChildren(
 )
 
 interface AppRouteChildren {
+  AppAcademicRoute: typeof AppAcademicRoute
   AppActionsRoute: typeof AppActionsRoute
   AppAuditRoute: typeof AppAuditRoute
   AppClassesRoute: typeof AppClassesRoute
@@ -385,6 +405,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppAcademicRoute: AppAcademicRoute,
   AppActionsRoute: AppActionsRoute,
   AppAuditRoute: AppAuditRoute,
   AppClassesRoute: AppClassesRoute,

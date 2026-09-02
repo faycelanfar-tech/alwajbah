@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, KeyRound, Shield, Power } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
+import { ROLE_LABELS } from "@/lib/branding";
 
 import { toast } from "sonner";
 
@@ -20,7 +21,7 @@ export const Route = createFileRoute("/_app/teachers")({ component: TeachersPage
 function TeachersPage() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ username: "", full_name: "", password: "", email: "", role: "teacher" as "teacher" | "supervisor" | "admin" });
+  const [form, setForm] = useState({ username: "", full_name: "", password: "", email: "", role: "teacher" as string });
   const [resetUser, setResetUser] = useState<{ id: string; username: string } | null>(null);
   const [newPwd, setNewPwd] = useState("");
   const resetFn = useServerFn(adminResetUserPassword);
@@ -120,9 +121,7 @@ function TeachersPage() {
                 <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v as any })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="teacher">معلم</SelectItem>
-                    <SelectItem value="supervisor">مشرف إداري</SelectItem>
-                    <SelectItem value="admin">مشرف عام (مدير النظام)</SelectItem>
+                    {Object.entries(ROLE_LABELS).map(([v, l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -152,7 +151,7 @@ function TeachersPage() {
                 </div>
                 <div className="flex flex-col items-end gap-1">
                   <Badge variant={u.role === "admin" ? "default" : u.role === "supervisor" ? "outline" : "secondary"}>
-                    {u.role === "admin" ? "مشرف عام" : u.role === "supervisor" ? "مشرف إداري" : "معلم"}
+                    {ROLE_LABELS[u.role] || u.role}
                   </Badge>
                   {!active && <Badge variant="outline" className="bg-rose-100 text-rose-700 border-rose-200 text-[10px]">معطّل</Badge>}
                 </div>
@@ -161,9 +160,7 @@ function TeachersPage() {
                 <Select value={u.role} onValueChange={(v) => changeRole.mutate({ userId: u.id, role: v })}>
                   <SelectTrigger className="text-xs"><Shield className="w-3 h-3 ml-1" /><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="teacher">معلم</SelectItem>
-                    <SelectItem value="supervisor">مشرف إداري</SelectItem>
-                    <SelectItem value="admin">مشرف عام</SelectItem>
+                    {Object.entries(ROLE_LABELS).map(([v, l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}
                   </SelectContent>
                 </Select>
                 <Button variant="outline" size="sm" onClick={() => setResetUser({ id: u.id, username: u.username })}>

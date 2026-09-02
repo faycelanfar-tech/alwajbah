@@ -9,10 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ACTION_OPTIONS } from "@/lib/branding";
+import { ACTION_OPTIONS, CUSTOM_ACTION, isReadOnlyRole } from "@/lib/branding";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { ClipboardCheck, AlertCircle, CheckCircle2 } from "lucide-react";
+import { ClipboardCheck, AlertCircle, CheckCircle2, Copy } from "lucide-react";
 
 export const Route = createFileRoute("/_app/actions")({ component: ActionsPage });
 
@@ -26,7 +26,8 @@ const severityColor: Record<string, string> = {
 function ActionsPage() {
   const { role } = useAuth();
   const navigate = useNavigate();
-  useEffect(() => { if (role && role !== "admin" && role !== "supervisor") navigate({ to: "/dashboard" }); }, [role, navigate]);
+  const readOnly = isReadOnlyRole(role);
+  useEffect(() => { if (role && role !== "admin" && role !== "supervisor" && !isReadOnlyRole(role)) navigate({ to: "/dashboard" }); }, [role, navigate]);
 
   const { data: violations = [] } = useQuery({
     queryKey: ["violations-actions"],
@@ -70,11 +71,11 @@ function ActionsPage() {
         </TabsList>
         <TabsContent value="pending" className="space-y-3 mt-4">
           {pending.length === 0 && <EmptyState text="لا توجد مخالفات بانتظار الإجراء" />}
-          {pending.map((v: any) => <ViolationCard key={v.id} v={v} />)}
+          {pending.map((v: any) => <ViolationCard key={v.id} v={v} readOnly={readOnly} />)}
         </TabsContent>
         <TabsContent value="done" className="space-y-3 mt-4">
           {done.length === 0 && <EmptyState text="لم يتم تسجيل أي إجراء بعد" />}
-          {done.map((v: any) => <ViolationCard key={v.id} v={v} />)}
+          {done.map((v: any) => <ViolationCard key={v.id} v={v} readOnly={readOnly} />)}
         </TabsContent>
       </Tabs>
     </div>
@@ -100,17 +101,21 @@ function EmptyState({ text }: { text: string }) {
   return <p className="text-center text-muted-foreground py-12">{text}</p>;
 }
 
-function ViolationCard({ v }: { v: any }) {
+function ViolationCard({ v, readOnly }: { v: any; readOnly?: boolean }) {
   const qc = useQueryClient();
-  const [action, setAction] = useState<string>(v.action_taken && (ACTION_OPTIONS as readonly string[]).includes(v.action_taken) ? v.action_taken : "");
-  const [notes, setNotes] = useState<string>(
-    v.action_taken && !(ACTION_OPTIONS as readonly string[]).includes(v.action_taken) ? v.action_taken : ""
-  );
+  const preset = v.action_taken && (ACTION_OPTIONS as readonly string[]).includes(String(v.action_taken).split(" — ")[0])
+    ? String(v.action_taken).split(" — ")[0] : (v.action_taken ? CUSTOM_ACTION : "");
+  const [action, setAction] = useState<string>(preset);
+  const [notes, setNotes] = useState<string>(() => {
+    if (!v.action_taken) return "";
+    const parts = String(v.action_taken).split(" — ");
+    return preset === CUSTOM_ACTION ? String(v.action_taken) : parts.slice(1).join(" — ");
+  });
 
   const save = useMutation({
     mutationFn: async () => {
-      const final = [action, notes].filter(Boolean).join(" — ");
-      if (!final) throw new Error("اختر الإجراء أولاً");
+      const final = action === CUSTOM_ACTION ? notes.trim() : [action, notes.trim()].filter(Boolean).join(" — ");
+      if (!final) throw new Error("اكتب أو اختر الإجراء أولاً");
       const { error } = await supabase.from("violations").update({ action_taken: final }).eq("id", v.id);
       if (error) throw error;
     },
@@ -135,6 +140,13 @@ function ViolationCard({ v }: { v: any }) {
     },
   });
 
+  async function copyAction() {
+    const text = v.action_taken || (action === CUSTOM_ACTION ? notes : [action, notes].filter(Boolean).join(" — "));
+    if (!text) { toast.error("لا يوجد نص للنسخ"); return; }
+    try { await navigator.clipboard.writeText(text); toast.success("تم نسخ نص الإجراء"); }
+    catch { toast.error("تعذّر النسخ"); }
+  }
+
   return (
     <Card className="border-0 shadow-card">
       <CardContent className="p-4 space-y-3">
@@ -151,7 +163,7 @@ function ViolationCard({ v }: { v: any }) {
               {v.period && <Badge variant="outline">الحصة {v.period}</Badge>}
             </div>
             <p className="mt-1 text-sm font-medium text-primary">{v.violation_types?.name || "—"}</p>
-            {v.description && <p className="mt-1 text-sm text-muted-foreground">{v.description}</p>}
+            {v.description && <p className="mt-1 text-sm text-muted-foreground break-words">{v.description}</p>}
             <div className="mt-1 text-xs text-muted-foreground flex gap-3 flex-wrap">
               <span>📅 {v.violation_date}</span>
               <span>👤 المعلم: {v.profiles?.full_name || v.profiles?.username || "—"}</span>
@@ -159,30 +171,46 @@ function ViolationCard({ v }: { v: any }) {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t">
-          <div className="space-y-2">
-            <Label>الإجراء المتخذ</Label>
-            <Select value={action} onValueChange={setAction}>
-              <SelectTrigger><SelectValue placeholder="اختر الإجراء" /></SelectTrigger>
-              <SelectContent>
-                {ACTION_OPTIONS.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
-              </SelectContent>
-            </Select>
+        {readOnly ? (
+          <div className="pt-2 border-t text-sm">
+            <span className="text-muted-foreground">الإجراء المتخذ: </span>
+            <span className="font-medium break-words">{v.action_taken || "بانتظار إجراء"}</span>
           </div>
-          <div className="space-y-2">
-            <Label>ملاحظات إضافية (اختياري)</Label>
-            <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="تفاصيل أو ملاحظات..." />
-          </div>
-        </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t">
+              <div className="space-y-2">
+                <Label>الإجراء المتخذ</Label>
+                <Select value={action} onValueChange={setAction}>
+                  <SelectTrigger><SelectValue placeholder="اختر الإجراء" /></SelectTrigger>
+                  <SelectContent>
+                    {ACTION_OPTIONS.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+                    <SelectItem value={CUSTOM_ACTION}>✏️ إجراء مخصص (كتابة يدوية)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>{action === CUSTOM_ACTION ? "نص الإجراء المخصص *" : "ملاحظات إضافية (اختياري)"}</Label>
+                <Textarea
+                  rows={3}
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder={action === CUSTOM_ACTION ? "اكتب أو الصق نص الإجراء هنا..." : "تفاصيل أو ملاحظات..."}
+                />
+              </div>
+            </div>
 
-        <div className="flex justify-end gap-2">
-          {v.action_taken && (
-            <Button variant="outline" onClick={() => clear.mutate()} disabled={clear.isPending}>إلغاء الإجراء</Button>
-          )}
-          <Button onClick={() => save.mutate()} disabled={save.isPending || !action}>
-            {v.action_taken ? "تحديث الإجراء" : "حفظ الإجراء"}
-          </Button>
-        </div>
+            <div className="flex justify-end gap-2 flex-wrap">
+              <Button variant="ghost" size="sm" onClick={copyAction}><Copy className="w-4 h-4 ml-1" /> نسخ النص</Button>
+              {v.action_taken && (
+                <Button variant="outline" onClick={() => clear.mutate()} disabled={clear.isPending}>إلغاء الإجراء</Button>
+              )}
+              <Button onClick={() => save.mutate()} disabled={save.isPending || (!action || (action === CUSTOM_ACTION && !notes.trim()))}>
+                {v.action_taken ? "تحديث الإجراء" : "حفظ الإجراء"}
+              </Button>
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   );
