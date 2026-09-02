@@ -120,3 +120,15 @@
   .shadow-elegant { box-shadow: var(--shadow-elegant); }
   .shadow-card { box-shadow: var(--shadow-card); }
 }
+
+@media print {
+  [data-app-chrome] { display: none !important; }
+  main { padding: 0 !important; }
+  .print\:hidden { display: none !important; }
+  body { background: #fff !important; }
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  @page { size: A4; margin: 12mm; }
+}

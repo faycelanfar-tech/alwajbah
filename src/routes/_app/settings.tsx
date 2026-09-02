@@ -99,6 +99,7 @@ function SettingsPage() {
 function SubjectsCard() {
   const qc = useQueryClient();
   const [name, setName] = useState("");
+  const [edits, setEdits] = useState<Record<string, string>>({});
 
   const { data: subjects = [] } = useQuery({
     queryKey: ["subjects"],
@@ -114,10 +115,19 @@ function SubjectsCard() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const rename = useMutation({
+    mutationFn: async ({ id, value }: { id: string; value: string }) => {
+      const { error } = await supabase.from("subjects").update({ name: value.trim() }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("تم تعديل المادة"); qc.invalidateQueries({ queryKey: ["subjects"] }); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   const remove = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("subjects").delete().eq("id", id);
-      if (error) throw error;
+      if (error) throw new Error("تعذّر الحذف — المادة مرتبطة بتقارير أو معلمين");
     },
     onSuccess: () => { toast.success("تم حذف المادة"); qc.invalidateQueries({ queryKey: ["subjects"] }); },
     onError: (e: any) => toast.error(e.message),
@@ -132,14 +142,18 @@ function SubjectsCard() {
           <Button onClick={() => add.mutate()} disabled={!name.trim() || add.isPending}>إضافة</Button>
         </div>
         <div className="space-y-2">
-          {subjects.map((s: any) => (
-            <div key={s.id} className="flex items-center justify-between border rounded-lg p-2">
-              <span className="font-medium">{s.name}</span>
-              <Button variant="ghost" size="sm" className="text-rose-600" onClick={() => remove.mutate(s.id)}>
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            </div>
-          ))}
+          {subjects.map((s: any) => {
+            const value = edits[s.id] ?? s.name;
+            return (
+              <div key={s.id} className="flex items-center gap-2 border rounded-lg p-2">
+                <Input value={value} onChange={(e) => setEdits({ ...edits, [s.id]: e.target.value })} className="flex-1" />
+                <Button variant="outline" size="sm" disabled={!value.trim() || value.trim() === s.name} onClick={() => rename.mutate({ id: s.id, value })}>حفظ</Button>
+                <Button variant="ghost" size="sm" className="text-rose-600" onClick={() => remove.mutate(s.id)}>
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            );
+          })}
           {subjects.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">لا توجد مواد بعد</p>}
         </div>
       </CardContent>

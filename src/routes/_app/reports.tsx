@@ -564,6 +564,8 @@ function ReportsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {(role === "admin" || role === "teacher" || role === "academic_deputy") && <AcademicReportSection />}
     </div>
   );
 }
@@ -610,6 +612,178 @@ function RankCard({ title, rows, empty, good, className }: { title: string; rows
               </div>
             );
           })}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+const LEVEL_ORDER = ["ممتاز", "جيد", "متوسط", "ضعيف"];
+const LEVEL_COLOR: Record<string, string> = { "ممتاز": "#10b981", "جيد": "#0ea5e9", "متوسط": "#f59e0b", "ضعيف": "#ef4444" };
+
+function AcademicReportSection() {
+  const { role, user } = useAuth();
+  const isTeacher = role === "teacher";
+  const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
+  const [classId, setClassId] = useState("all");
+  const [studentId, setStudentId] = useState("all");
+  const [subjectId, setSubjectId] = useState("all");
+
+  const { data: allClasses = [] } = useQuery({
+    queryKey: ["classes"],
+    queryFn: async () => (await supabase.from("classes").select("*").order("name")).data ?? [],
+  });
+  const { data: allSubjects = [] } = useQuery({
+    queryKey: ["subjects"],
+    queryFn: async () => (await supabase.from("subjects").select("*").order("sort_order")).data ?? [],
+  });
+  const { data: myAssign } = useQuery({
+    queryKey: ["my-assignments", user?.id],
+    enabled: !!user?.id && isTeacher,
+    queryFn: async () => {
+      const [s, c] = await Promise.all([
+        supabase.from("teacher_subjects").select("subject_id").eq("user_id", user!.id),
+        supabase.from("teacher_classes").select("class_id").eq("user_id", user!.id),
+      ]);
+      return {
+        subjectIds: (s.data ?? []).map((r: any) => r.subject_id),
+        classIds: (c.data ?? []).map((r: any) => r.class_id),
+      };
+    },
+  });
+
+  const subjects = isTeacher && myAssign?.subjectIds.length
+    ? allSubjects.filter((s: any) => myAssign.subjectIds.includes(s.id)) : allSubjects;
+  const classes = isTeacher && myAssign?.classIds.length
+    ? allClasses.filter((c: any) => myAssign.classIds.includes(c.id)) : allClasses;
+
+  const { data: rows = [] } = useQuery({
+    queryKey: ["academic-report", month],
+    queryFn: async () =>
+      (await supabase
+        .from("academic_reports")
+        .select("*, students(full_name, class_id, classes(name)), subjects(name)")
+        .eq("month", `${month}-01`)).data ?? [],
+  });
+
+  const allowedClassIds = classes.map((c: any) => c.id);
+  const allowedSubjectIds = subjects.map((s: any) => s.id);
+  const filtered = rows.filter((r: any) => {
+    if (!allowedClassIds.includes(r.students?.class_id)) return false;
+    if (!allowedSubjectIds.includes(r.subject_id)) return false;
+    if (classId !== "all" && r.students?.class_id !== classId) return false;
+    if (studentId !== "all" && r.student_id !== studentId) return false;
+    if (subjectId !== "all" && r.subject_id !== subjectId) return false;
+    return true;
+  });
+
+  const students = useMemo(() => {
+    const map = new Map<string, string>();
+    rows.forEach((r: any) => {
+      if (classId === "all" || r.students?.class_id === classId) map.set(r.student_id, r.students?.full_name ?? "");
+    });
+    return Array.from(map, ([id, name]) => ({ id, name }));
+  }, [rows, classId]);
+
+  const levelData = LEVEL_ORDER.map((lvl) => ({
+    name: lvl,
+    value: filtered.filter((r: any) => r.level === lvl).length,
+  }));
+
+  const subjectData = subjects.map((s: any) => {
+    const list = filtered.filter((r: any) => r.subject_id === s.id);
+    const row: any = { name: s.name };
+    LEVEL_ORDER.forEach((lvl) => { row[lvl] = list.filter((r: any) => r.level === lvl).length; });
+    return row;
+  }).filter((r: any) => LEVEL_ORDER.some((l) => r[l] > 0));
+
+  return (
+    <Card className="border-0 shadow-card">
+      <CardHeader className="flex flex-row items-center justify-between gap-2 flex-wrap">
+        <CardTitle>التقرير الأكاديمي الشهري</CardTitle>
+        <Button variant="outline" size="sm" className="print:hidden" onClick={() => window.print()}>
+          <Printer className="w-4 h-4 ml-1" /> طباعة
+        </Button>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 print:hidden">
+          <div className="space-y-2"><Label>الشهر</Label><Input type="month" value={month} onChange={(e) => setMonth(e.target.value)} /></div>
+          <div className="space-y-2">
+            <Label>الصف</Label>
+            <Select value={classId} onValueChange={(v) => { setClassId(v); setStudentId("all"); }}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">كل الصفوف</SelectItem>
+                {classes.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>الطالب</Label>
+            <Select value={studentId} onValueChange={setStudentId}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">كل الطلاب</SelectItem>
+                {students.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>المادة</Label>
+            <Select value={subjectId} onValueChange={setSubjectId}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">كل المواد</SelectItem>
+                {subjects.map((s: any) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="h-64">
+            <p className="text-sm font-medium mb-2">توزيع المستويات</p>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={levelData} dataKey="value" nameKey="name" outerRadius={80} label>
+                  {levelData.map((d) => <Cell key={d.name} fill={LEVEL_COLOR[d.name]} />)}
+                </Pie>
+                <Legend />
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="h-64">
+            <p className="text-sm font-medium mb-2">المستويات حسب المادة</p>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={subjectData}>
+                <XAxis dataKey="name" fontSize={11} />
+                <YAxis allowDecimals={false} fontSize={11} />
+                <Tooltip />
+                <Legend />
+                {LEVEL_ORDER.map((lvl) => <Bar key={lvl} dataKey={lvl} stackId="a" fill={LEVEL_COLOR[lvl]} />)}
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-secondary">
+              <tr><th className="p-2 text-right">الطالب</th><th className="p-2 text-right">الصف</th><th className="p-2 text-right">المادة</th><th className="p-2 text-right">المستوى</th></tr>
+            </thead>
+            <tbody>
+              {filtered.map((r: any) => (
+                <tr key={r.id} className="border-t">
+                  <td className="p-2 font-medium">{r.students?.full_name}</td>
+                  <td className="p-2">{r.students?.classes?.name || "—"}</td>
+                  <td className="p-2">{r.subjects?.name || "—"}</td>
+                  <td className="p-2 font-medium" style={{ color: LEVEL_COLOR[r.level] }}>{r.level}</td>
+                </tr>
+              ))}
+              {filtered.length === 0 && <tr><td colSpan={4} className="p-6 text-center text-muted-foreground">لا توجد بيانات لهذا الشهر</td></tr>}
+            </tbody>
+          </table>
         </div>
       </CardContent>
     </Card>

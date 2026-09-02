@@ -23,17 +23,17 @@ function AppLayout() {
 
   return (
     <div className="min-h-screen flex bg-background">
-      <AppSidebar />
+      <div data-app-chrome><AppSidebar /></div>
       <main className="flex-1 min-w-0 pb-20 lg:pb-0">
-        <AppHeader />
+        <div data-app-chrome><AppHeader /></div>
         <div className="p-4 md:p-8 max-w-7xl mx-auto">
           <Outlet />
         </div>
-        <footer className="text-center text-xs text-muted-foreground py-6 border-t mt-8">
+        <footer data-app-chrome className="text-center text-xs text-muted-foreground py-6 border-t mt-8">
           {DEVELOPER_CREDIT}
         </footer>
       </main>
-      <MobileBar />
+      <div data-app-chrome><MobileBar /></div>
     </div>
   );
 }
