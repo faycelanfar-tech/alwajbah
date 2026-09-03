@@ -126,10 +126,30 @@ function SubjectsCard() {
 
   const remove = useMutation({
     mutationFn: async (id: string) => {
+      const [{ count: repCount }, { count: teachCount }] = await Promise.all([
+        supabase.from("academic_reports").select("id", { count: "exact", head: true }).eq("subject_id", id),
+        supabase.from("teacher_subjects").select("id", { count: "exact", head: true }).eq("subject_id", id),
+      ]);
+      if ((repCount ?? 0) > 0) throw new Error("لا يمكن حذف هذه المادة لأنها مرتبطة برصد أكاديمي");
+      if ((teachCount ?? 0) > 0) throw new Error("لا يمكن حذف هذه المادة لأنها مسندة إلى معلم");
       const { error } = await supabase.from("subjects").delete().eq("id", id);
-      if (error) throw new Error("تعذّر الحذف — المادة مرتبطة بتقارير أو معلمين");
+      if (error) throw new Error("تعذّر الحذف — المادة مرتبطة ببيانات أخرى");
     },
     onSuccess: () => { toast.success("تم حذف المادة"); qc.invalidateQueries({ queryKey: ["subjects"] }); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const move = useMutation({
+    mutationFn: async ({ index, dir }: { index: number; dir: -1 | 1 }) => {
+      const a = subjects[index] as any;
+      const b = subjects[index + dir] as any;
+      if (!a || !b) return;
+      const { error: e1 } = await supabase.from("subjects").update({ sort_order: b.sort_order }).eq("id", a.id);
+      if (e1) throw e1;
+      const { error: e2 } = await supabase.from("subjects").update({ sort_order: a.sort_order }).eq("id", b.id);
+      if (e2) throw e2;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["subjects"] }),
     onError: (e: any) => toast.error(e.message),
   });
 
@@ -142,10 +162,18 @@ function SubjectsCard() {
           <Button onClick={() => add.mutate()} disabled={!name.trim() || add.isPending}>إضافة</Button>
         </div>
         <div className="space-y-2">
-          {subjects.map((s: any) => {
+          {subjects.map((s: any, i: number) => {
             const value = edits[s.id] ?? s.name;
             return (
               <div key={s.id} className="flex items-center gap-2 border rounded-lg p-2">
+                <div className="flex flex-col">
+                  <Button variant="ghost" size="icon" className="h-5 w-6" disabled={i === 0 || move.isPending} onClick={() => move.mutate({ index: i, dir: -1 })} aria-label="أعلى">
+                    <ChevronUp className="w-4 h-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-5 w-6" disabled={i === subjects.length - 1 || move.isPending} onClick={() => move.mutate({ index: i, dir: 1 })} aria-label="أسفل">
+                    <ChevronDown className="w-4 h-4" />
+                  </Button>
+                </div>
                 <Input value={value} onChange={(e) => setEdits({ ...edits, [s.id]: e.target.value })} className="flex-1" />
                 <Button variant="outline" size="sm" disabled={!value.trim() || value.trim() === s.name} onClick={() => rename.mutate({ id: s.id, value })}>حفظ</Button>
                 <Button variant="ghost" size="sm" className="text-rose-600" onClick={() => remove.mutate(s.id)}>
@@ -156,6 +184,7 @@ function SubjectsCard() {
           })}
           {subjects.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">لا توجد مواد بعد</p>}
         </div>
+
       </CardContent>
     </Card>
   );
