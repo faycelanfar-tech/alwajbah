@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Trash2, ClipboardPaste, Search, Eye } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -21,6 +22,7 @@ function StudentsPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [filterClass, setFilterClass] = useState<string>("all");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const { data: classes = [] } = useQuery({
     queryKey: ["classes"],
