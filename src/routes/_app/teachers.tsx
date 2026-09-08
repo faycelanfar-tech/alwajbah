@@ -245,20 +245,50 @@ function TeachersPage() {
                   </Button>
                 </div>
               )}
-              <Button
-                variant={active ? "outline" : "default"}
-                size="sm"
-                className={`w-full ${active ? "text-rose-600 hover:bg-rose-50" : ""}`}
-                onClick={() => toggleActive.mutate({ userId: u.id, isActive: !active })}
-              >
-                <Power className="w-4 h-4 ml-1" /> {active ? "تعطيل الحساب" : "تفعيل الحساب"}
-              </Button>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant={active ? "outline" : "default"}
+                  size="sm"
+                  className={active ? "text-rose-600 hover:bg-rose-50" : ""}
+                  onClick={() => toggleActive.mutate({ userId: u.id, isActive: !active })}
+                >
+                  <Power className="w-4 h-4 ml-1" /> {active ? "تعطيل" : "تفعيل"}
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  disabled={u.id === me?.id}
+                  onClick={() => setDeleteUser({ id: u.id, username: u.username })}
+                >
+                  <Trash2 className="w-4 h-4 ml-1" /> حذف الحساب
+                </Button>
+              </div>
             </CardContent>
           </Card>
           );
         })}
       </div>
 
+      <AlertDialog open={!!deleteUser} onOpenChange={(v) => !v && setDeleteUser(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>حذف حساب @{deleteUser?.username}؟</AlertDialogTitle>
+            <AlertDialogDescription>
+              سيتم حذف الحساب نهائيًا مع جميع سجلاته (المخالفات، السلوكيات الإيجابية، التقارير الأكاديمية، الإسنادات). لا يمكن التراجع عن هذا الإجراء.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={removeUser.isPending}
+              onClick={(e) => { e.preventDefault(); if (deleteUser) removeUser.mutate(deleteUser.id); }}
+            >
+              حذف نهائي
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog open={!!resetUser} onOpenChange={(v) => !v && setResetUser(null)}>
         <DialogContent>
