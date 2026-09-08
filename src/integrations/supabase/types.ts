@@ -65,6 +65,36 @@ export type Database = {
           },
         ]
       }
+      academic_terms: {
+        Row: {
+          created_at: string
+          end_date: string
+          id: string
+          is_current: boolean
+          name: string
+          start_date: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          end_date: string
+          id?: string
+          is_current?: boolean
+          name: string
+          start_date: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string
+          id?: string
+          is_current?: boolean
+          name?: string
+          start_date?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       action_templates: {
         Row: {
           created_at: string
@@ -172,6 +202,39 @@ export type Database = {
           id?: string
           name?: string
           stage?: string | null
+        }
+        Relationships: []
+      }
+      grading_levels: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          label: string
+          max_score: number
+          min_score: number
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          label: string
+          max_score?: number
+          min_score?: number
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          label?: string
+          max_score?: number
+          min_score?: number
+          sort_order?: number
+          updated_at?: string
         }
         Relationships: []
       }
