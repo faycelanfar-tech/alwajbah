@@ -43,7 +43,7 @@ import {
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/_app/violations")({
+export const Route = createFileRoute("/_app/violations/")({
   component: ViolationsPage,
 });
 
