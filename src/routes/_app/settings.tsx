@@ -92,6 +92,10 @@ function SettingsPage() {
       </Card>
 
       <SubjectsCard />
+
+      <TermsCard />
+
+      <GradingCard />
     </div>
   );
 }
