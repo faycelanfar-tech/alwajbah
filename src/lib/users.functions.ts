@@ -116,6 +116,7 @@ export const adminDeleteUser = createServerFn({ method: "POST" })
       const { error } = await a.from(t).delete().eq("user_id", uid);
       if (error) throw new Error(`تعذر حذف السجلات (${t}): ${error.message}`);
     }
+    await a.from("students").update({ created_by: null }).eq("created_by", uid);
     await a.from("profiles").delete().eq("id", uid);
 
     const { error } = await a.auth.admin.deleteUser(uid);
