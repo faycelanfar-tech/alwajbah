@@ -42,6 +42,11 @@ function StudentProfile() {
     queryFn: async () => (await supabase.from("point_transactions").select("*").eq("student_id", id).order("created_at", { ascending: true })).data ?? [],
   });
 
+  const { data: positives = [] } = useQuery({
+    queryKey: ["student-positives", id],
+    queryFn: async () => (await supabase.from("positive_behaviors").select("*, positive_behavior_types(name)").eq("student_id", id).order("behavior_date", { ascending: false })).data ?? [],
+  });
+
   const chartData = useMemo(() => {
     let balance = 50;
     const out: { date: string; points: number }[] = [{ date: "البداية", points: 50 }];
@@ -56,8 +61,10 @@ function StudentProfile() {
     const total = violations.length;
     const acted = violations.filter((v: any) => v.action_taken).length;
     const rewards = transactions.filter((t: any) => t.delta > 0).reduce((s: number, t: any) => s + t.delta, 0);
-    return { total, acted, rewards };
-  }, [violations, transactions]);
+    const pos = positives.length;
+    const ratio = pos + total > 0 ? Math.round((pos / (pos + total)) * 100) : 0;
+    return { total, acted, rewards, pos, ratio };
+  }, [violations, transactions, positives]);
 
   function printReport() {
     const esc = (s: any) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
@@ -141,7 +148,7 @@ function StudentProfile() {
         <Button onClick={printReport}><Printer className="w-4 h-4 ml-1" /> طباعة تقرير</Button>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <Card className="border-0 shadow-card"><CardContent className="p-5">
           <div className="flex items-center justify-between">
             <div><p className="text-sm text-muted-foreground">الرصيد الحالي</p><p className={`text-3xl font-bold mt-1 ${balanceColor}`}>{balance}</p></div>
@@ -163,7 +170,31 @@ function StudentProfile() {
             <Award className="w-8 h-8 text-emerald-500" />
           </div>
         </CardContent></Card>
+        <Card className="border-0 shadow-card"><CardContent className="p-5">
+          <div>
+            <p className="text-sm text-muted-foreground">نسبة السلوك الإيجابي</p>
+            <p className="text-3xl font-bold mt-1 text-emerald-600">{stats.ratio}%</p>
+            <p className="text-xs text-muted-foreground mt-1">{stats.pos} سلوك إيجابي مقابل {stats.total} مخالفة</p>
+          </div>
+        </CardContent></Card>
       </div>
+
+      {positives.length > 0 && (
+        <Card className="border-0 shadow-card">
+          <CardHeader><CardTitle>السلوك الإيجابي ({positives.length})</CardTitle></CardHeader>
+          <CardContent className="space-y-2">
+            {positives.map((p: any) => (
+              <div key={p.id} className="flex items-center justify-between gap-3 p-2 rounded-lg border flex-wrap">
+                <span className="font-medium text-emerald-700">{p.positive_behavior_types?.name || p.note || "سلوك إيجابي"}</span>
+                <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                  <span>+{p.points}</span>
+                  <span>{p.behavior_date}</span>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="border-0 shadow-card">
         <CardHeader><CardTitle>تطور النقاط</CardTitle></CardHeader>
@@ -180,13 +211,15 @@ function StudentProfile() {
         </CardContent>
       </Card>
 
+      <AcademicJourney studentId={id} />
+
       <Card className="border-0 shadow-card">
-        <CardHeader><CardTitle>سجل المخالفات ({violations.length})</CardTitle></CardHeader>
+        <CardHeader><CardTitle>سجل المخالفات والإجراءات ({violations.length})</CardTitle></CardHeader>
         <CardContent>
           {violations.length === 0 && <p className="text-center text-muted-foreground py-6">لا توجد مخالفات</p>}
           <div className="space-y-2">
             {violations.map((v: any) => (
-              <div key={v.id} className="p-3 rounded-lg border bg-card">
+              <Link key={v.id} to="/violations/$id" params={{ id: v.id }} className="block p-3 rounded-lg border bg-card hover:bg-secondary/50 transition-colors">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-medium text-primary">{v.violation_types?.name || "—"}</span>
                   {v.violation_types?.severity && (
@@ -202,11 +235,91 @@ function StudentProfile() {
                 ) : (
                   <Badge className="bg-amber-100 text-amber-700 border-amber-200 mt-2" variant="outline">بانتظار إجراء</Badge>
                 )}
-              </div>
+              </Link>
             ))}
           </div>
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function AcademicJourney({ studentId }: { studentId: string }) {
+  const { levelColor, levels } = useSettings();
+
+  const { data: rows = [] } = useQuery({
+    queryKey: ["student-academic", studentId],
+    queryFn: async () =>
+      (await supabase
+        .from("academic_reports")
+        .select("month, level, subjects(name)")
+        .eq("student_id", studentId)
+        .order("month")).data ?? [],
+  });
+
+  const months = Array.from(new Set(rows.map((r: any) => String(r.month).slice(0, 7))));
+  const subjectNames = Array.from(new Set(rows.map((r: any) => r.subjects?.name).filter(Boolean)));
+  const cell = (subject: string, month: string) =>
+    rows.find((r: any) => r.subjects?.name === subject && String(r.month).slice(0, 7) === month)?.level;
+
+  const score = (label: string) => {
+    const i = levels.findIndex((l) => l.label === label);
+    return i === -1 ? 0 : levels.length - i;
+  };
+  const trend = months.map((m) => {
+    const list = rows.filter((r: any) => String(r.month).slice(0, 7) === m);
+    const avg = list.length ? list.reduce((s: number, r: any) => s + score(r.level), 0) / list.length : 0;
+    return { month: m, avg: Number(avg.toFixed(2)) };
+  });
+
+  return (
+    <Card className="border-0 shadow-card">
+      <CardHeader><CardTitle>المستوى الأكاديمي عبر الأشهر</CardTitle></CardHeader>
+      <CardContent className="space-y-4">
+        {rows.length === 0 ? (
+          <p className="text-center text-muted-foreground py-6">لا يوجد رصد أكاديمي لهذا الطالب</p>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm border-collapse">
+                <thead>
+                  <tr className="bg-secondary">
+                    <th className="border p-2 text-right">المادة</th>
+                    {months.map((m) => <th key={m} className="border p-2">{m}</th>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  {subjectNames.map((s: any) => (
+                    <tr key={s}>
+                      <td className="border p-2 font-medium">{s}</td>
+                      {months.map((m) => {
+                        const lvl = cell(s, m);
+                        return (
+                          <td key={m} className="border p-2 text-center font-medium" style={{ color: lvl ? levelColor(lvl) : undefined }}>
+                            {lvl || "—"}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div>
+              <p className="text-sm font-medium mb-2">تطور المستوى العام</p>
+              <ResponsiveContainer width="100%" height={220}>
+                <LineChart data={trend}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                  <YAxis domain={[0, levels.length]} tick={{ fontSize: 11 }} />
+                  <Tooltip />
+                  <Line type="monotone" dataKey="avg" name="المستوى" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
 }

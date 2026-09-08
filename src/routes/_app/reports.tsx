@@ -652,10 +652,13 @@ function AcademicReportSection() {
     },
   });
 
-  const subjects = isTeacher && myAssign?.subjectIds.length
-    ? allSubjects.filter((s: any) => myAssign.subjectIds.includes(s.id)) : allSubjects;
-  const classes = isTeacher && myAssign?.classIds.length
-    ? allClasses.filter((c: any) => myAssign.classIds.includes(c.id)) : allClasses;
+  // المعلم: مادته وصفوفه فقط — المشرف العام والنائب الأكاديمي: الكل
+  const subjects = isTeacher
+    ? (myAssign ? allSubjects.filter((s: any) => myAssign.subjectIds.includes(s.id)) : [])
+    : allSubjects;
+  const classes = isTeacher
+    ? (myAssign ? allClasses.filter((c: any) => myAssign.classIds.includes(c.id)) : [])
+    : allClasses;
 
   const { data: rows = [] } = useQuery({
     queryKey: ["academic-report", month],

@@ -13,7 +13,7 @@ import { Plus, Trash2, ClipboardPaste, Search, Eye } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/_app/students")({ component: StudentsPage });
+export const Route = createFileRoute("/_app/students/")({ component: StudentsPage });
 
 function StudentsPage() {
   const { role } = useAuth();

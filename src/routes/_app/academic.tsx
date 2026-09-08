@@ -70,11 +70,12 @@ function AcademicPage() {
     },
   });
 
-  const subjects = isTeacher && myAssign?.subjectIds.length
-    ? allSubjects.filter((s: any) => myAssign.subjectIds.includes(s.id))
+  // المعلم مقيَّد دائماً بمواده وصفوفه المسندة، بينما المشرف العام والنائب الأكاديمي يرون الكل
+  const subjects = isTeacher
+    ? (myAssign ? allSubjects.filter((s: any) => myAssign.subjectIds.includes(s.id)) : [])
     : allSubjects;
-  const classes = isTeacher && myAssign?.classIds.length
-    ? allClasses.filter((c: any) => myAssign.classIds.includes(c.id))
+  const classes = isTeacher
+    ? (myAssign ? allClasses.filter((c: any) => myAssign.classIds.includes(c.id)) : [])
     : allClasses;
 
   // اختيار تلقائي عند وجود خيار واحد للمعلم

@@ -92,6 +92,10 @@ function SettingsPage() {
       </Card>
 
       <SubjectsCard />
+
+      <TermsCard />
+
+      <GradingCard />
     </div>
   );
 }
@@ -190,3 +194,144 @@ function SubjectsCard() {
   );
 }
 
+
+function TermsCard() {
+  const { refresh } = useSettings();
+  const qc = useQueryClient();
+  const [form, setForm] = useState({ name: "", start_date: "", end_date: "" });
+
+  const { data: terms = [] } = useQuery({
+    queryKey: ["academic_terms"],
+    queryFn: async () => (await supabase.from("academic_terms").select("*").order("start_date")).data ?? [],
+  });
+
+  const done = async (msg: string) => {
+    toast.success(msg);
+    await qc.invalidateQueries({ queryKey: ["academic_terms"] });
+    await refresh();
+  };
+
+  const add = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("academic_terms").insert({
+        name: form.name.trim(), start_date: form.start_date, end_date: form.end_date,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => { setForm({ name: "", start_date: "", end_date: "" }); done("تمت إضافة الفصل الدراسي"); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const update = useMutation({
+    mutationFn: async ({ id, patch }: { id: string; patch: any }) => {
+      const { error } = await supabase.from("academic_terms").update(patch).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => done("تم الحفظ"),
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const setCurrent = useMutation({
+    mutationFn: async (id: string) => {
+      const { error: e1 } = await supabase.from("academic_terms").update({ is_current: false }).neq("id", id);
+      if (e1) throw e1;
+      const { error: e2 } = await supabase.from("academic_terms").update({ is_current: true }).eq("id", id);
+      if (e2) throw e2;
+    },
+    onSuccess: () => done("تم تحديد الفصل الحالي"),
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const remove = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("academic_terms").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => done("تم حذف الفصل الدراسي"),
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  return (
+    <Card className="border-0 shadow-card">
+      <CardHeader><CardTitle>مواعيد الفصول الدراسية</CardTitle></CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+          <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="اسم الفصل" />
+          <Input type="date" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} />
+          <Input type="date" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} />
+          <Button onClick={() => add.mutate()} disabled={!form.name.trim() || !form.start_date || !form.end_date || add.isPending}>
+            إضافة
+          </Button>
+        </div>
+        <div className="space-y-2">
+          {terms.map((t: any) => (
+            <div key={t.id} className="border rounded-lg p-2 grid grid-cols-1 sm:grid-cols-5 gap-2 items-center">
+              <Input defaultValue={t.name} onBlur={(e) => e.target.value.trim() !== t.name && update.mutate({ id: t.id, patch: { name: e.target.value.trim() } })} />
+              <Input type="date" defaultValue={t.start_date} onBlur={(e) => e.target.value !== t.start_date && update.mutate({ id: t.id, patch: { start_date: e.target.value } })} />
+              <Input type="date" defaultValue={t.end_date} onBlur={(e) => e.target.value !== t.end_date && update.mutate({ id: t.id, patch: { end_date: e.target.value } })} />
+              <Button variant={t.is_current ? "default" : "outline"} size="sm" onClick={() => setCurrent.mutate(t.id)}>
+                {t.is_current ? "الفصل الحالي" : "تعيين كحالي"}
+              </Button>
+              <Button variant="ghost" size="sm" className="text-rose-600 justify-self-start" onClick={() => remove.mutate(t.id)}>
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+          ))}
+          {terms.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">لم تتم إضافة فصول دراسية بعد</p>}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function GradingCard() {
+  const { refresh } = useSettings();
+  const qc = useQueryClient();
+
+  const { data: levels = [] } = useQuery({
+    queryKey: ["grading_levels"],
+    queryFn: async () => (await supabase.from("grading_levels").select("*").order("sort_order")).data ?? [],
+  });
+
+  const update = useMutation({
+    mutationFn: async ({ id, patch }: { id: string; patch: any }) => {
+      const { error } = await supabase.from("grading_levels").update(patch).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: async () => {
+      toast.success("تم حفظ نظام التصحيح");
+      await qc.invalidateQueries({ queryKey: ["grading_levels"] });
+      await refresh();
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  return (
+    <Card className="border-0 shadow-card">
+      <CardHeader><CardTitle>نظام التصحيح الأكاديمي</CardTitle></CardHeader>
+      <CardContent className="space-y-3">
+        <p className="text-sm text-muted-foreground">تُستخدم هذه المستويات وألوانها وحدود درجاتها في الرصد الأكاديمي وكل التقارير.</p>
+        {levels.map((l: any) => (
+          <div key={l.id} className="border rounded-lg p-2 grid grid-cols-2 sm:grid-cols-4 gap-2 items-center">
+            <div className="space-y-1">
+              <Label className="text-xs">المستوى</Label>
+              <Input defaultValue={l.label} onBlur={(e) => e.target.value.trim() !== l.label && update.mutate({ id: l.id, patch: { label: e.target.value.trim() } })} />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">اللون</Label>
+              <Input type="color" className="h-10 p-1" defaultValue={l.color} onBlur={(e) => e.target.value !== l.color && update.mutate({ id: l.id, patch: { color: e.target.value } })} />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">من درجة</Label>
+              <Input type="number" defaultValue={l.min_score} onBlur={(e) => Number(e.target.value) !== l.min_score && update.mutate({ id: l.id, patch: { min_score: Number(e.target.value) } })} />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">إلى درجة</Label>
+              <Input type="number" defaultValue={l.max_score} onBlur={(e) => Number(e.target.value) !== l.max_score && update.mutate({ id: l.id, patch: { max_score: Number(e.target.value) } })} />
+            </div>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}

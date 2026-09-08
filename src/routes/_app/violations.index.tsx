@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -38,11 +38,12 @@ import {
   Settings,
   ClipboardEdit,
   History,
+  Eye,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/_app/violations")({
+export const Route = createFileRoute("/_app/violations/")({
   component: ViolationsPage,
 });
 
@@ -281,6 +282,11 @@ function ViolationsPage() {
                         </TableCell>
                         <TableCell className="align-top">
                           <div className="flex items-center gap-1 flex-wrap">
+                            <Link to="/violations/$id" params={{ id: v.id }}>
+                              <Button size="icon" variant="ghost" title="تفاصيل المخالفة">
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                            </Link>
                             <HistoryDialog violation={v} />
                             {canTakeAction && <ActionTakenDialog violation={v} />}
                             {canDelete && (
