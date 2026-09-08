@@ -192,7 +192,7 @@ function TeachersPage() {
               )}
               <div className="space-y-2"><Label>البريد الإلكتروني (اختياري)</Label><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="user@example.com" /></div>
               <div className="space-y-2"><Label>كلمة المرور *</Label><Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} minLength={6} /></div>
-              <p className="text-xs text-muted-foreground">⚠️ بعد الحفظ قد يتم تسجيل دخولك بالحساب الجديد. سجّل خروج وادخل مرة أخرى بحسابك.</p>
+              <p className="text-xs text-muted-foreground">سيُطلب من المستخدم تغيير كلمة المرور عند أول دخول. الحد الأدنى 6 خانات.</p>
             </div>
             <DialogFooter><Button onClick={() => add.mutate()} disabled={!form.username || !form.password || !form.full_name || add.isPending}>إنشاء</Button></DialogFooter>
           </DialogContent>
