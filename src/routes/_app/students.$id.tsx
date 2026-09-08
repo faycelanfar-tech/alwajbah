@@ -42,6 +42,11 @@ function StudentProfile() {
     queryFn: async () => (await supabase.from("point_transactions").select("*").eq("student_id", id).order("created_at", { ascending: true })).data ?? [],
   });
 
+  const { data: positives = [] } = useQuery({
+    queryKey: ["student-positives", id],
+    queryFn: async () => (await supabase.from("positive_behaviors").select("*, positive_behavior_types(name)").eq("student_id", id).order("behavior_date", { ascending: false })).data ?? [],
+  });
+
   const chartData = useMemo(() => {
     let balance = 50;
     const out: { date: string; points: number }[] = [{ date: "البداية", points: 50 }];
@@ -56,8 +61,10 @@ function StudentProfile() {
     const total = violations.length;
     const acted = violations.filter((v: any) => v.action_taken).length;
     const rewards = transactions.filter((t: any) => t.delta > 0).reduce((s: number, t: any) => s + t.delta, 0);
-    return { total, acted, rewards };
-  }, [violations, transactions]);
+    const pos = positives.length;
+    const ratio = pos + total > 0 ? Math.round((pos / (pos + total)) * 100) : 0;
+    return { total, acted, rewards, pos, ratio };
+  }, [violations, transactions, positives]);
 
   function printReport() {
     const esc = (s: any) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
