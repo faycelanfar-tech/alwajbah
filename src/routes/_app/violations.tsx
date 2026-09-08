@@ -38,6 +38,7 @@ import {
   Settings,
   ClipboardEdit,
   History,
+  Eye,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
