@@ -39,10 +39,19 @@ function StudentsPage() {
   });
 
   const del = useMutation({
-    mutationFn: async (id: string) => { const { error } = await supabase.from("students").delete().eq("id", id); if (error) throw error; },
-    onSuccess: () => { toast.success("تم الحذف"); qc.invalidateQueries({ queryKey: ["students"] }); },
+    mutationFn: async (ids: string[]) => { const { error } = await supabase.from("students").delete().in("id", ids); if (error) throw error; return ids.length; },
+    onSuccess: (n) => {
+      toast.success(n === 1 ? "تم الحذف" : `تم حذف ${n} طالب`);
+      setSelected(new Set());
+      qc.invalidateQueries({ queryKey: ["students"] });
+    },
     onError: (e: any) => toast.error(e.message),
   });
+
+  const filteredIds = filtered.map((s: any) => s.id as string);
+  const allSelected = filteredIds.length > 0 && filteredIds.every((id) => selected.has(id));
+  const toggleOne = (id: string) => setSelected((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const toggleAll = () => setSelected(allSelected ? new Set() : new Set(filteredIds));
 
   return (
     <div className="space-y-6">
@@ -74,12 +83,28 @@ function StudentsPage() {
               </SelectContent>
             </Select>
           </div>
+          {isAdmin && selected.size > 0 && (
+            <div className="flex items-center justify-between gap-3 mt-3 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2">
+              <span className="text-sm">تم تحديد {selected.size} طالب</span>
+              <div className="flex gap-2">
+                <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>إلغاء التحديد</Button>
+                <Button size="sm" variant="destructive" disabled={del.isPending} onClick={() => { if (confirm(`حذف ${selected.size} طالب نهائيًا؟`)) del.mutate([...selected]); }}>
+                  <Trash2 className="w-4 h-4 ml-1" /> حذف المحدد
+                </Button>
+              </div>
+            </div>
+          )}
         </CardHeader>
         <CardContent>
           <div className="rounded-lg border overflow-hidden">
             <table className="w-full text-sm">
               <thead className="bg-secondary/60">
                 <tr>
+                  {isAdmin && (
+                    <th className="p-3 w-10 text-center">
+                      <Checkbox checked={allSelected} onCheckedChange={toggleAll} aria-label="تحديد الكل" />
+                    </th>
+                  )}
                   <th className="text-right p-3 font-semibold">الاسم</th>
                   <th className="text-right p-3 font-semibold">رقم الطالب</th>
                   <th className="text-right p-3 font-semibold">الفصل</th>
@@ -88,10 +113,15 @@ function StudentsPage() {
               </thead>
               <tbody>
                 {filtered.length === 0 && (
-                  <tr><td colSpan={4} className="text-center text-muted-foreground py-8">لا توجد بيانات</td></tr>
+                  <tr><td colSpan={isAdmin ? 5 : 4} className="text-center text-muted-foreground py-8">لا توجد بيانات</td></tr>
                 )}
                 {filtered.map((s: any) => (
-                  <tr key={s.id} className="border-t hover:bg-secondary/30">
+                  <tr key={s.id} className={`border-t hover:bg-secondary/30 ${selected.has(s.id) ? "bg-primary/5" : ""}`}>
+                    {isAdmin && (
+                      <td className="p-3 text-center">
+                        <Checkbox checked={selected.has(s.id)} onCheckedChange={() => toggleOne(s.id)} aria-label={`تحديد ${s.full_name}`} />
+                      </td>
+                    )}
                     <td className="p-3 font-medium">{s.full_name}</td>
                     <td className="p-3 text-muted-foreground">{s.student_number || "—"}</td>
                     <td className="p-3 text-muted-foreground">{s.classes?.name || "—"}</td>
@@ -101,7 +131,7 @@ function StudentsPage() {
                           <Button size="icon" variant="ghost" title="بطاقة الطالب"><Eye className="w-4 h-4 text-primary" /></Button>
                         </Link>
                         {isAdmin && (
-                          <Button size="icon" variant="ghost" onClick={() => { if (confirm("حذف الطالب؟")) del.mutate(s.id); }}>
+                          <Button size="icon" variant="ghost" onClick={() => { if (confirm("حذف الطالب؟")) del.mutate([s.id]); }}>
                             <Trash2 className="w-4 h-4 text-destructive" />
                           </Button>
                         )}
