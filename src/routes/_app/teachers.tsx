@@ -3,13 +3,16 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { adminResetUserPassword } from "@/lib/password.functions";
+import { adminCreateUser, adminDeleteUser } from "@/lib/users.functions";
+import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, KeyRound, Shield, Power } from "lucide-react";
+import { Plus, KeyRound, Shield, Power, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
 import { ROLE_LABELS } from "@/lib/branding";
@@ -22,12 +25,16 @@ const emptyForm = { username: "", full_name: "", password: "", email: "", role: 
 
 function TeachersPage() {
   const qc = useQueryClient();
+  const { user: me } = useAuth();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [resetUser, setResetUser] = useState<{ id: string; username: string } | null>(null);
+  const [deleteUser, setDeleteUser] = useState<{ id: string; username: string } | null>(null);
   const [assignUser, setAssignUser] = useState<{ id: string; name: string } | null>(null);
   const [newPwd, setNewPwd] = useState("");
   const resetFn = useServerFn(adminResetUserPassword);
+  const createFn = useServerFn(adminCreateUser);
+  const deleteFn = useServerFn(adminDeleteUser);
 
   const { data: users = [] } = useQuery({
     queryKey: ["users"],
