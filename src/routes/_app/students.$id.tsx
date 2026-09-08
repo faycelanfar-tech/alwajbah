@@ -148,7 +148,7 @@ function StudentProfile() {
         <Button onClick={printReport}><Printer className="w-4 h-4 ml-1" /> طباعة تقرير</Button>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <Card className="border-0 shadow-card"><CardContent className="p-5">
           <div className="flex items-center justify-between">
             <div><p className="text-sm text-muted-foreground">الرصيد الحالي</p><p className={`text-3xl font-bold mt-1 ${balanceColor}`}>{balance}</p></div>
@@ -170,7 +170,31 @@ function StudentProfile() {
             <Award className="w-8 h-8 text-emerald-500" />
           </div>
         </CardContent></Card>
+        <Card className="border-0 shadow-card"><CardContent className="p-5">
+          <div>
+            <p className="text-sm text-muted-foreground">نسبة السلوك الإيجابي</p>
+            <p className="text-3xl font-bold mt-1 text-emerald-600">{stats.ratio}%</p>
+            <p className="text-xs text-muted-foreground mt-1">{stats.pos} سلوك إيجابي مقابل {stats.total} مخالفة</p>
+          </div>
+        </CardContent></Card>
       </div>
+
+      {positives.length > 0 && (
+        <Card className="border-0 shadow-card">
+          <CardHeader><CardTitle>السلوك الإيجابي ({positives.length})</CardTitle></CardHeader>
+          <CardContent className="space-y-2">
+            {positives.map((p: any) => (
+              <div key={p.id} className="flex items-center justify-between gap-3 p-2 rounded-lg border flex-wrap">
+                <span className="font-medium text-emerald-700">{p.positive_behavior_types?.name || p.note || "سلوك إيجابي"}</span>
+                <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                  <span>+{p.points}</span>
+                  <span>{p.behavior_date}</span>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="border-0 shadow-card">
         <CardHeader><CardTitle>تطور النقاط</CardTitle></CardHeader>
