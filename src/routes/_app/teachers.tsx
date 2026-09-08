@@ -3,13 +3,16 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { adminResetUserPassword } from "@/lib/password.functions";
+import { adminCreateUser, adminDeleteUser } from "@/lib/users.functions";
+import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, KeyRound, Shield, Power } from "lucide-react";
+import { Plus, KeyRound, Shield, Power, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
 import { ROLE_LABELS } from "@/lib/branding";
@@ -22,12 +25,16 @@ const emptyForm = { username: "", full_name: "", password: "", email: "", role: 
 
 function TeachersPage() {
   const qc = useQueryClient();
+  const { user: me } = useAuth();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [resetUser, setResetUser] = useState<{ id: string; username: string } | null>(null);
+  const [deleteUser, setDeleteUser] = useState<{ id: string; username: string } | null>(null);
   const [assignUser, setAssignUser] = useState<{ id: string; name: string } | null>(null);
   const [newPwd, setNewPwd] = useState("");
   const resetFn = useServerFn(adminResetUserPassword);
+  const createFn = useServerFn(adminCreateUser);
+  const deleteFn = useServerFn(adminDeleteUser);
 
   const { data: users = [] } = useQuery({
     queryKey: ["users"],
@@ -57,31 +64,17 @@ function TeachersPage() {
 
   const add = useMutation({
     mutationFn: async () => {
-      if (form.role === "teacher" && !form.subject_id) throw new Error("اختر المادة التي يدرّسها المعلم");
-      const email = `${form.username.toLowerCase().trim()}@alwajbah.local`;
-      const { data, error } = await supabase.auth.signUp({
-        email, password: form.password,
-        options: { data: { username: form.username.toLowerCase().trim(), full_name: form.full_name, role: form.role } },
+      await createFn({
+        data: {
+          username: form.username,
+          full_name: form.full_name,
+          password: form.password,
+          email: form.email || undefined,
+          role: form.role,
+          subject_id: form.subject_id || undefined,
+          class_ids: form.class_ids,
+        },
       });
-      if (error) throw error;
-      if (form.email && data.user) {
-        await supabase.from("profiles").update({ email: form.email.trim() }).eq("id", data.user.id);
-      }
-      // Force-set role (handle_new_user defaults to teacher for non-first user)
-      if (data.user && form.role !== "teacher") {
-        await supabase.from("user_roles").upsert(
-          { user_id: data.user.id, role: form.role as any },
-          { onConflict: "user_id,role" }
-        );
-        // Remove default teacher role if it was assigned
-        await supabase.from("user_roles").delete().eq("user_id", data.user.id).eq("role", "teacher");
-      }
-      if (data.user && form.role === "teacher") {
-        await supabase.from("teacher_subjects").insert({ user_id: data.user.id, subject_id: form.subject_id });
-        if (form.class_ids.length) {
-          await supabase.from("teacher_classes").insert(form.class_ids.map((c) => ({ user_id: data.user!.id, class_id: c })));
-        }
-      }
     },
     onSuccess: () => {
       toast.success("تم إنشاء الحساب بنجاح");
@@ -89,6 +82,16 @@ function TeachersPage() {
       qc.invalidateQueries({ queryKey: ["teacher_subjects"] });
       qc.invalidateQueries({ queryKey: ["teacher_classes"] });
       setOpen(false); setForm(emptyForm);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const removeUser = useMutation({
+    mutationFn: async (userId: string) => { await deleteFn({ data: { userId } }); },
+    onSuccess: () => {
+      toast.success("تم حذف الحساب وجميع سجلاته");
+      setDeleteUser(null);
+      qc.invalidateQueries();
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -189,7 +192,7 @@ function TeachersPage() {
               )}
               <div className="space-y-2"><Label>البريد الإلكتروني (اختياري)</Label><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="user@example.com" /></div>
               <div className="space-y-2"><Label>كلمة المرور *</Label><Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} minLength={6} /></div>
-              <p className="text-xs text-muted-foreground">⚠️ بعد الحفظ قد يتم تسجيل دخولك بالحساب الجديد. سجّل خروج وادخل مرة أخرى بحسابك.</p>
+              <p className="text-xs text-muted-foreground">سيُطلب من المستخدم تغيير كلمة المرور عند أول دخول. الحد الأدنى 6 خانات.</p>
             </div>
             <DialogFooter><Button onClick={() => add.mutate()} disabled={!form.username || !form.password || !form.full_name || add.isPending}>إنشاء</Button></DialogFooter>
           </DialogContent>
@@ -242,20 +245,50 @@ function TeachersPage() {
                   </Button>
                 </div>
               )}
-              <Button
-                variant={active ? "outline" : "default"}
-                size="sm"
-                className={`w-full ${active ? "text-rose-600 hover:bg-rose-50" : ""}`}
-                onClick={() => toggleActive.mutate({ userId: u.id, isActive: !active })}
-              >
-                <Power className="w-4 h-4 ml-1" /> {active ? "تعطيل الحساب" : "تفعيل الحساب"}
-              </Button>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant={active ? "outline" : "default"}
+                  size="sm"
+                  className={active ? "text-rose-600 hover:bg-rose-50" : ""}
+                  onClick={() => toggleActive.mutate({ userId: u.id, isActive: !active })}
+                >
+                  <Power className="w-4 h-4 ml-1" /> {active ? "تعطيل" : "تفعيل"}
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  disabled={u.id === me?.id}
+                  onClick={() => setDeleteUser({ id: u.id, username: u.username })}
+                >
+                  <Trash2 className="w-4 h-4 ml-1" /> حذف الحساب
+                </Button>
+              </div>
             </CardContent>
           </Card>
           );
         })}
       </div>
 
+      <AlertDialog open={!!deleteUser} onOpenChange={(v) => !v && setDeleteUser(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>حذف حساب @{deleteUser?.username}؟</AlertDialogTitle>
+            <AlertDialogDescription>
+              سيتم حذف الحساب نهائيًا مع جميع سجلاته (المخالفات، السلوكيات الإيجابية، التقارير الأكاديمية، الإسنادات). لا يمكن التراجع عن هذا الإجراء.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={removeUser.isPending}
+              onClick={(e) => { e.preventDefault(); if (deleteUser) removeUser.mutate(deleteUser.id); }}
+            >
+              حذف نهائي
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog open={!!resetUser} onOpenChange={(v) => !v && setResetUser(null)}>
         <DialogContent>

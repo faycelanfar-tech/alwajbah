@@ -2,6 +2,7 @@ import { School } from "lucide-react";
 import { useSettings } from "@/hooks/use-settings";
 import { NotificationsBell } from "@/components/notifications-bell";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { ChangePasswordDialog } from "@/components/change-password-dialog";
 import { ROLE_LABELS } from "@/components/app-sidebar";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -32,6 +33,7 @@ export function AppHeader() {
             </div>
           )}
           <NotificationsBell />
+          <ChangePasswordDialog />
           <ThemeToggle />
         </div>
       </div>
