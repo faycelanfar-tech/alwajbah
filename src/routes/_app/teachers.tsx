@@ -57,31 +57,17 @@ function TeachersPage() {
 
   const add = useMutation({
     mutationFn: async () => {
-      if (form.role === "teacher" && !form.subject_id) throw new Error("اختر المادة التي يدرّسها المعلم");
-      const email = `${form.username.toLowerCase().trim()}@alwajbah.local`;
-      const { data, error } = await supabase.auth.signUp({
-        email, password: form.password,
-        options: { data: { username: form.username.toLowerCase().trim(), full_name: form.full_name, role: form.role } },
+      await createFn({
+        data: {
+          username: form.username,
+          full_name: form.full_name,
+          password: form.password,
+          email: form.email || undefined,
+          role: form.role,
+          subject_id: form.subject_id || undefined,
+          class_ids: form.class_ids,
+        },
       });
-      if (error) throw error;
-      if (form.email && data.user) {
-        await supabase.from("profiles").update({ email: form.email.trim() }).eq("id", data.user.id);
-      }
-      // Force-set role (handle_new_user defaults to teacher for non-first user)
-      if (data.user && form.role !== "teacher") {
-        await supabase.from("user_roles").upsert(
-          { user_id: data.user.id, role: form.role as any },
-          { onConflict: "user_id,role" }
-        );
-        // Remove default teacher role if it was assigned
-        await supabase.from("user_roles").delete().eq("user_id", data.user.id).eq("role", "teacher");
-      }
-      if (data.user && form.role === "teacher") {
-        await supabase.from("teacher_subjects").insert({ user_id: data.user.id, subject_id: form.subject_id });
-        if (form.class_ids.length) {
-          await supabase.from("teacher_classes").insert(form.class_ids.map((c) => ({ user_id: data.user!.id, class_id: c })));
-        }
-      }
     },
     onSuccess: () => {
       toast.success("تم إنشاء الحساب بنجاح");
@@ -89,6 +75,16 @@ function TeachersPage() {
       qc.invalidateQueries({ queryKey: ["teacher_subjects"] });
       qc.invalidateQueries({ queryKey: ["teacher_classes"] });
       setOpen(false); setForm(emptyForm);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const removeUser = useMutation({
+    mutationFn: async (userId: string) => { await deleteFn({ data: { userId } }); },
+    onSuccess: () => {
+      toast.success("تم حذف الحساب وجميع سجلاته");
+      setDeleteUser(null);
+      qc.invalidateQueries();
     },
     onError: (e: Error) => toast.error(e.message),
   });
