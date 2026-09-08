@@ -180,13 +180,15 @@ function StudentProfile() {
         </CardContent>
       </Card>
 
+      <AcademicJourney studentId={id} />
+
       <Card className="border-0 shadow-card">
-        <CardHeader><CardTitle>سجل المخالفات ({violations.length})</CardTitle></CardHeader>
+        <CardHeader><CardTitle>سجل المخالفات والإجراءات ({violations.length})</CardTitle></CardHeader>
         <CardContent>
           {violations.length === 0 && <p className="text-center text-muted-foreground py-6">لا توجد مخالفات</p>}
           <div className="space-y-2">
             {violations.map((v: any) => (
-              <div key={v.id} className="p-3 rounded-lg border bg-card">
+              <Link key={v.id} to="/violations/$id" params={{ id: v.id }} className="block p-3 rounded-lg border bg-card hover:bg-secondary/50 transition-colors">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-medium text-primary">{v.violation_types?.name || "—"}</span>
                   {v.violation_types?.severity && (
@@ -202,11 +204,91 @@ function StudentProfile() {
                 ) : (
                   <Badge className="bg-amber-100 text-amber-700 border-amber-200 mt-2" variant="outline">بانتظار إجراء</Badge>
                 )}
-              </div>
+              </Link>
             ))}
           </div>
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function AcademicJourney({ studentId }: { studentId: string }) {
+  const { levelColor, levels } = useSettings();
+
+  const { data: rows = [] } = useQuery({
+    queryKey: ["student-academic", studentId],
+    queryFn: async () =>
+      (await supabase
+        .from("academic_reports")
+        .select("month, level, subjects(name)")
+        .eq("student_id", studentId)
+        .order("month")).data ?? [],
+  });
+
+  const months = Array.from(new Set(rows.map((r: any) => String(r.month).slice(0, 7))));
+  const subjectNames = Array.from(new Set(rows.map((r: any) => r.subjects?.name).filter(Boolean)));
+  const cell = (subject: string, month: string) =>
+    rows.find((r: any) => r.subjects?.name === subject && String(r.month).slice(0, 7) === month)?.level;
+
+  const score = (label: string) => {
+    const i = levels.findIndex((l) => l.label === label);
+    return i === -1 ? 0 : levels.length - i;
+  };
+  const trend = months.map((m) => {
+    const list = rows.filter((r: any) => String(r.month).slice(0, 7) === m);
+    const avg = list.length ? list.reduce((s: number, r: any) => s + score(r.level), 0) / list.length : 0;
+    return { month: m, avg: Number(avg.toFixed(2)) };
+  });
+
+  return (
+    <Card className="border-0 shadow-card">
+      <CardHeader><CardTitle>المستوى الأكاديمي عبر الأشهر</CardTitle></CardHeader>
+      <CardContent className="space-y-4">
+        {rows.length === 0 ? (
+          <p className="text-center text-muted-foreground py-6">لا يوجد رصد أكاديمي لهذا الطالب</p>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm border-collapse">
+                <thead>
+                  <tr className="bg-secondary">
+                    <th className="border p-2 text-right">المادة</th>
+                    {months.map((m) => <th key={m} className="border p-2">{m}</th>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  {subjectNames.map((s: any) => (
+                    <tr key={s}>
+                      <td className="border p-2 font-medium">{s}</td>
+                      {months.map((m) => {
+                        const lvl = cell(s, m);
+                        return (
+                          <td key={m} className="border p-2 text-center font-medium" style={{ color: lvl ? levelColor(lvl) : undefined }}>
+                            {lvl || "—"}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div>
+              <p className="text-sm font-medium mb-2">تطور المستوى العام</p>
+              <ResponsiveContainer width="100%" height={220}>
+                <LineChart data={trend}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                  <YAxis domain={[0, levels.length]} tick={{ fontSize: 11 }} />
+                  <Tooltip />
+                  <Line type="monotone" dataKey="avg" name="المستوى" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
 }
