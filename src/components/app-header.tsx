@@ -32,6 +32,7 @@ export function AppHeader() {
             </div>
           )}
           <NotificationsBell />
+          <ChangePasswordDialog />
           <ThemeToggle />
         </div>
       </div>
