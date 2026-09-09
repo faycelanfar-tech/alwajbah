@@ -382,6 +382,16 @@ function ReportsPage() {
         <p className="text-muted-foreground mt-1">عرض وتصدير التقارير — {settings.school_name}</p>
       </div>
 
+      {isTeacher && (
+        <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 text-sm print:hidden">
+          {teacherHasClasses
+            ? "التقارير معروضة لصفوفك المسندة فقط."
+            : "لا توجد صفوف مسندة لحسابك، لذلك تظهر هنا المخالفات التي سجّلتها أنت فقط. راجع المشرف العام لإسناد صفوفك."}
+        </div>
+      )}
+
+
+
       <Card className="border-0 shadow-card">
         <CardContent className="p-5 space-y-3">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
