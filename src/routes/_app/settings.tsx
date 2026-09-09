@@ -96,7 +96,10 @@ function SettingsPage() {
       <TermsCard />
 
       <GradingCard />
+
+      <PagePermissionsCard />
     </div>
+
   );
 }
 
