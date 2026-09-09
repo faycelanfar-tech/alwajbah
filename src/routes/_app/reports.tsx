@@ -39,18 +39,37 @@ function ReportsPage() {
   const onlyMine = isTeacher || mineOnly;
 
 
-  const { data: classes = [] } = useQuery({
+  const { data: allClasses = [] } = useQuery({
     queryKey: ["classes"],
     queryFn: async () => (await supabase.from("classes").select("*").order("name")).data ?? [],
   });
+  const { data: myClassIds } = useQuery({
+    queryKey: ["my-class-ids", user?.id],
+    enabled: !!user?.id && isTeacher,
+    queryFn: async () =>
+      ((await supabase.from("teacher_classes").select("class_id").eq("user_id", user!.id)).data ?? []).map(
+        (r: any) => r.class_id as string,
+      ),
+  });
+  // المعلم يرى صفوفه المسندة فقط، وإن لم تكن له صفوف يرى ما سجّله هو فقط
+  const teacherHasClasses = isTeacher && !!myClassIds && myClassIds.length > 0;
+  const classes = useMemo(
+    () => (teacherHasClasses ? allClasses.filter((c: any) => myClassIds!.includes(c.id)) : allClasses),
+    [allClasses, teacherHasClasses, myClassIds],
+  );
   const { data: vtypes = [] } = useQuery({
     queryKey: ["violation_types"],
     queryFn: async () => (await supabase.from("violation_types").select("*").order("name")).data ?? [],
   });
-  const { data: allStudents = [] } = useQuery({
+  const { data: allStudentsRaw = [] } = useQuery({
     queryKey: ["students-all"],
     queryFn: async () => (await supabase.from("students").select("id, full_name, class_id").order("full_name")).data ?? [],
   });
+  const allStudents = useMemo(
+    () => (teacherHasClasses ? allStudentsRaw.filter((s: any) => myClassIds!.includes(s.class_id)) : allStudentsRaw),
+    [allStudentsRaw, teacherHasClasses, myClassIds],
+  );
+
 
   const stages = useMemo(
     () => Array.from(new Set(classes.map((c: any) => c.stage).filter(Boolean))).sort() as string[],
