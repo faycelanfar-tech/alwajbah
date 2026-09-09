@@ -271,6 +271,33 @@ export type Database = {
         }
         Relationships: []
       }
+      page_permissions: {
+        Row: {
+          created_at: string
+          id: string
+          page_key: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+          visible: boolean
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          page_key: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          visible?: boolean
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          page_key?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          visible?: boolean
+        }
+        Relationships: []
+      }
       point_transactions: {
         Row: {
           class_id: string | null
@@ -563,6 +590,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_page_permissions: {
+        Row: {
+          created_at: string
+          id: string
+          page_key: string
+          updated_at: string
+          user_id: string
+          visible: boolean
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          page_key: string
+          updated_at?: string
+          user_id: string
+          visible?: boolean
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          page_key?: string
+          updated_at?: string
+          user_id?: string
+          visible?: boolean
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
