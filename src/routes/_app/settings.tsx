@@ -10,6 +10,8 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Upload, Loader2, Trash2, ChevronUp, ChevronDown } from "lucide-react";
+import { PagePermissionsCard } from "@/components/page-permissions-card";
+
 
 export const Route = createFileRoute("/_app/settings")({ component: SettingsPage });
 
@@ -54,7 +56,7 @@ function SettingsPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="space-y-6 max-w-4xl">
       <div>
         <h1 className="text-3xl font-bold">الإعدادات</h1>
         <p className="text-muted-foreground mt-1">تخصيص النظام</p>
@@ -96,7 +98,10 @@ function SettingsPage() {
       <TermsCard />
 
       <GradingCard />
+
+      <PagePermissionsCard />
     </div>
+
   );
 }
 

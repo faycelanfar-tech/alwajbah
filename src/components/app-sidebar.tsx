@@ -1,34 +1,17 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { useSettings } from "@/hooks/use-settings";
-import { LayoutDashboard, Users, GraduationCap, AlertTriangle, FileBarChart, Settings as SettingsIcon, LogOut, UserCog, School, Trophy, ClipboardCheck, History, Sparkles, BookOpen } from "lucide-react";
+import { usePagePermissions } from "@/hooks/use-page-permissions";
+import { LogOut, School } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ROLE_LABELS, READONLY_ROLES } from "@/lib/branding";
-
-const VIEWERS = ["admin", "supervisor", "teacher", ...READONLY_ROLES];
-
-const nav: { to: string; label: string; icon: typeof LayoutDashboard; roles: string[] }[] = [
-  { to: "/dashboard", label: "الرئيسية", icon: LayoutDashboard, roles: VIEWERS },
-  { to: "/violations", label: "المخالفات", icon: AlertTriangle, roles: VIEWERS },
-  { to: "/actions", label: "الإجراءات", icon: ClipboardCheck, roles: ["admin", "supervisor", ...READONLY_ROLES] },
-  { to: "/positive", label: "السلوك الإيجابي", icon: Sparkles, roles: VIEWERS },
-  { to: "/academic", label: "التقرير الأكاديمي", icon: BookOpen, roles: VIEWERS },
-  { to: "/rewards", label: "النقاط والمكافآت", icon: Trophy, roles: ["admin", "teacher"] },
-  { to: "/students", label: "الطلاب", icon: GraduationCap, roles: ["admin", "teacher"] },
-  { to: "/classes", label: "الفصول", icon: Users, roles: ["admin"] },
-  { to: "/teachers", label: "المعلمون والحسابات", icon: UserCog, roles: ["admin"] },
-  { to: "/reports", label: "التقارير", icon: FileBarChart, roles: VIEWERS },
-  { to: "/audit", label: "سجل النشاط", icon: History, roles: ["admin"] },
-  { to: "/settings", label: "الإعدادات", icon: SettingsIcon, roles: ["admin"] },
-];
+import { ROLE_LABELS } from "@/lib/branding";
 
 export { ROLE_LABELS };
-
-
 
 export function AppSidebar() {
   const { role, profile, signOut } = useAuth();
   const { settings, displayName } = useSettings();
+  const { visiblePages } = usePagePermissions();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
@@ -50,7 +33,7 @@ export function AppSidebar() {
       </div>
 
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-        {nav.filter((n) => !role || n.roles.includes(role)).map((item) => {
+        {visiblePages.map((item) => {
           const active = pathname === item.to || pathname.startsWith(item.to + "/");
           const Icon = item.icon;
           return (
@@ -91,9 +74,10 @@ export function AppSidebar() {
 }
 
 export function MobileBar() {
-  const { role, signOut } = useAuth();
+  const { signOut } = useAuth();
+  const { visiblePages } = usePagePermissions();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const items = nav.filter((n) => !role || n.roles.includes(role)).slice(0, 5);
+  const items = visiblePages.slice(0, 5);
   return (
     <>
       <div className="lg:hidden fixed bottom-0 inset-x-0 bg-sidebar border-t border-sidebar-border z-50">

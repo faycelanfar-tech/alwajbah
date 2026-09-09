@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Printer, TrendingDown, TrendingUp, Award, AlertTriangle } from "lucide-react";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, Legend } from "recharts";
 import { useSettings } from "@/hooks/use-settings";
 import { useMemo } from "react";
 
@@ -20,7 +20,7 @@ const severityColor: Record<string, string> = {
 
 function StudentProfile() {
   const { id } = Route.useParams();
-  const { settings, displayName } = useSettings();
+  const { settings, displayName, levelColor } = useSettings();
 
   const { data: student } = useQuery({
     queryKey: ["student", id],
@@ -66,8 +66,42 @@ function StudentProfile() {
     return { total, acted, rewards, pos, ratio };
   }, [violations, transactions, positives]);
 
+  const severityData = useMemo(() => {
+    const order = ["الأولى", "الثانية", "الثالثة", "الرابعة"];
+    return order
+      .map((s) => ({ name: `الدرجة ${s}`, value: violations.filter((v: any) => v.violation_types?.severity === s).length }))
+      .filter((d) => d.value > 0);
+  }, [violations]);
+
+  const { data: academic = [] } = useQuery({
+    queryKey: ["student-academic", id],
+    queryFn: async () =>
+      (await supabase
+        .from("academic_reports")
+        .select("month, level, subjects(name)")
+        .eq("student_id", id)
+        .order("month")).data ?? [],
+  });
+
   function printReport() {
     const esc = (s: any) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
+
+    const charts = Array.from(document.querySelectorAll<HTMLElement>("[data-print-chart]"))
+      .map((node) => {
+        const title = node.getAttribute("data-print-chart") || "";
+        const svg = node.querySelector("svg.recharts-surface") as SVGSVGElement | null;
+        if (!svg) return "";
+        const clone = svg.cloneNode(true) as SVGSVGElement;
+        const rect = svg.getBoundingClientRect();
+        if (!clone.getAttribute("viewBox")) clone.setAttribute("viewBox", `0 0 ${rect.width || 600} ${rect.height || 260}`);
+        clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+        clone.removeAttribute("width");
+        clone.removeAttribute("height");
+        clone.setAttribute("preserveAspectRatio", "xMidYMid meet");
+        return `<div class="chart"><h3>${esc(title)}</h3>${clone.outerHTML}</div>`;
+      })
+      .join("");
+
     const rows = violations.map((v: any) => `
       <tr>
         <td>${esc(v.violation_date)}</td>
@@ -78,29 +112,57 @@ function StudentProfile() {
       </tr>
     `).join("");
 
-    const html = `<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>تقرير سلوك الطالب</title>
+    const posRows = positives.map((p: any) => `
+      <tr>
+        <td>${esc(p.behavior_date)}</td>
+        <td>${esc(p.positive_behavior_types?.name || p.note || "سلوك إيجابي")}</td>
+        <td style="text-align:center">+${esc(p.points)}</td>
+      </tr>
+    `).join("");
+
+    const months = Array.from(new Set(academic.map((r: any) => String(r.month).slice(0, 7))));
+    const subjectNames = Array.from(new Set(academic.map((r: any) => (r as any).subjects?.name).filter(Boolean)));
+    const acadRows = subjectNames
+      .map((s: any) => `<tr><td>${esc(s)}</td>${months
+        .map((m) => {
+          const lvl = academic.find((r: any) => (r as any).subjects?.name === s && String(r.month).slice(0, 7) === m)?.level;
+          return `<td style="text-align:center;color:${lvl ? levelColor(lvl) : "#999"};font-weight:600">${esc(lvl || "—")}</td>`;
+        })
+        .join("")}</tr>`)
+      .join("");
+
+    const html = `<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>تقرير الطالب</title>
     <style>
-      body { font-family: 'Cairo','Tajawal','Segoe UI',sans-serif; padding: 24px; color: #111; }
-      header { display:flex; align-items:center; gap:16px; border-bottom:2px solid #1d4ed8; padding-bottom:12px; margin-bottom:16px;}
+      @page { size: A4; margin: 12mm; }
+      body { font-family: 'Cairo','Tajawal','Segoe UI',sans-serif; color: #111; }
+      header { display:flex; align-items:center; gap:16px; border-bottom:3px solid #1d4ed8; padding-bottom:12px; margin-bottom:16px;}
       header img { width:60px; height:60px; object-fit:contain;}
       h1 { margin:0; font-size:22px; color:#1d4ed8;}
-      .meta { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:16px 0; }
-      .meta div { background:#f5f7ff; padding:12px; border-radius:8px;}
-      .meta b { display:block; color:#1d4ed8; font-size:12px;}
-      .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:12px 0; }
-      .stats div { text-align:center; padding:10px; border:1px solid #ddd; border-radius:8px;}
-      .stats b { display:block; font-size:20px; color:#1d4ed8;}
-      table { width:100%; border-collapse:collapse; margin-top:12px; font-size:13px;}
-      th,td { border:1px solid #ddd; padding:8px; text-align:right;}
+      h2 { color:#1d4ed8; font-size:15px; margin:16px 0 6px; }
+      .meta { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:14px 0; }
+      .meta div { background:#f5f7ff; padding:10px; border-radius:8px; font-size:13px;}
+      .meta b { display:block; color:#1d4ed8; font-size:11px;}
+      .stats { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin:12px 0; }
+      .stats div { text-align:center; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:11px;}
+      .stats b { display:block; font-size:19px; color:#1d4ed8;}
+      .charts { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+      .chart { border:1px solid #e5e7eb; border-radius:8px; padding:8px; page-break-inside:avoid; }
+      .chart h3 { margin:0 0 6px; font-size:12px; color:#1d4ed8; text-align:center; }
+      .chart svg { width:100% !important; height:auto !important; max-height:230px; }
+      table { width:100%; border-collapse:collapse; margin-top:6px; font-size:12px;}
+      thead { display: table-header-group; }
+      tr { page-break-inside:avoid; }
+      th,td { border:1px solid #ddd; padding:6px; text-align:right; word-break:break-word;}
       th { background:#1d4ed8; color:#fff;}
-      tr:nth-child(even) { background:#f9fafb;}
-      footer { margin-top:24px; text-align:center; color:#666; font-size:11px; border-top:1px solid #ddd; padding-top:8px;}
+      tbody tr:nth-child(even) td { background:#f9fafb;}
+      footer { margin-top:20px; text-align:center; color:#666; font-size:11px; border-top:1px solid #ddd; padding-top:8px;}
+      * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     </style></head><body>
       <header>
         ${settings.logo_url ? `<img src="${esc(settings.logo_url)}" />` : ""}
         <div>
           <h1>${esc(displayName)}</h1>
-          <div>تقرير سلوك الطالب</div>
+          <div>التقرير الشامل للطالب</div>
         </div>
       </header>
       <div class="meta">
@@ -113,17 +175,27 @@ function StudentProfile() {
         <div><b>${stats.total}</b>إجمالي المخالفات</div>
         <div><b>${stats.acted}</b>إجراءات منفذة</div>
         <div><b>${stats.rewards}</b>نقاط مكافآت</div>
+        <div><b>${stats.ratio}%</b>نسبة السلوك الإيجابي</div>
       </div>
-      <h3>سجل المخالفات</h3>
+      ${charts ? `<h2>الرسوم البيانية</h2><div class="charts">${charts}</div>` : ""}
+      <h2>سجل المخالفات والإجراءات</h2>
       <table><thead><tr><th>التاريخ</th><th>النوع</th><th>الدرجة</th><th>الوصف</th><th>الإجراء</th></tr></thead>
       <tbody>${rows || '<tr><td colspan="5" style="text-align:center">لا توجد مخالفات</td></tr>'}</tbody></table>
+      <h2>السلوك الإيجابي</h2>
+      <table><thead><tr><th>التاريخ</th><th>السلوك</th><th>النقاط</th></tr></thead>
+      <tbody>${posRows || '<tr><td colspan="3" style="text-align:center">لا توجد سلوكيات مسجلة</td></tr>'}</tbody></table>
+      <h2>المستوى الأكاديمي عبر الأشهر</h2>
+      ${months.length
+        ? `<table><thead><tr><th>المادة</th>${months.map((m) => `<th>${esc(m)}</th>`).join("")}</tr></thead><tbody>${acadRows}</tbody></table>`
+        : `<p style="font-size:12px;color:#666">لا يوجد رصد أكاديمي لهذا الطالب</p>`}
       <footer>تاريخ التقرير: ${new Date().toLocaleDateString("ar-EG")}</footer>
-      <script>window.onload=()=>window.print()</script>
+      <script>window.onload=()=>setTimeout(()=>window.print(),400)<\/script>
     </body></html>`;
 
     const w = window.open("", "_blank");
-    if (w) { w.document.write(html); w.document.close(); }
+    if (w) { w.document.open(); w.document.write(html); w.document.close(); }
   }
+
 
   if (!student) {
     return <div className="text-center py-12 text-muted-foreground">جارٍ التحميل...</div>;
@@ -199,17 +271,39 @@ function StudentProfile() {
       <Card className="border-0 shadow-card">
         <CardHeader><CardTitle>تطور النقاط</CardTitle></CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={260}>
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip />
-              <Line type="monotone" dataKey="points" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
-            </LineChart>
-          </ResponsiveContainer>
+          <div data-print-chart="تطور النقاط">
+            <ResponsiveContainer width="100%" height={260}>
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Line type="monotone" dataKey="points" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </CardContent>
       </Card>
+
+      {severityData.length > 0 && (
+        <Card className="border-0 shadow-card">
+          <CardHeader><CardTitle>توزيع المخالفات حسب الدرجة</CardTitle></CardHeader>
+          <CardContent>
+            <div data-print-chart="توزيع المخالفات حسب الدرجة">
+              <ResponsiveContainer width="100%" height={260}>
+                <PieChart>
+                  <Pie data={severityData} dataKey="value" nameKey="name" outerRadius={90} label>
+                    {severityData.map((d, i) => <Cell key={d.name} fill={["#10b981", "#f59e0b", "#f97316", "#ef4444"][i % 4]} />)}
+                  </Pie>
+                  <Legend />
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
 
       <AcademicJourney studentId={id} />
 
@@ -305,7 +399,7 @@ function AcademicJourney({ studentId }: { studentId: string }) {
                 </tbody>
               </table>
             </div>
-            <div>
+            <div data-print-chart="تطور المستوى الأكاديمي">
               <p className="text-sm font-medium mb-2">تطور المستوى العام</p>
               <ResponsiveContainer width="100%" height={220}>
                 <LineChart data={trend}>
@@ -317,6 +411,7 @@ function AcademicJourney({ studentId }: { studentId: string }) {
                 </LineChart>
               </ResponsiveContainer>
             </div>
+
           </>
         )}
       </CardContent>
