@@ -660,6 +660,7 @@ const LEVEL_COLOR: Record<string, string> = { "ممتاز": "#10b981", "جيد":
 
 function AcademicReportSection() {
   const { role, user } = useAuth();
+  const { settings, displayName, currentTerm } = useSettings();
   const isTeacher = role === "teacher";
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
   const [classId, setClassId] = useState("all");
@@ -706,6 +707,18 @@ function AcademicReportSection() {
         .eq("month", `${month}-01`)).data ?? [],
   });
 
+  // كل أشهر الطالب المختار (لرسم التطور)
+  const { data: studentHistory = [] } = useQuery({
+    queryKey: ["academic-student-history", studentId],
+    enabled: studentId !== "all",
+    queryFn: async () =>
+      (await supabase
+        .from("academic_reports")
+        .select("month, level, subject_id")
+        .eq("student_id", studentId)
+        .order("month")).data ?? [],
+  });
+
   const allowedClassIds = classes.map((c: any) => c.id);
   const allowedSubjectIds = subjects.map((s: any) => s.id);
   const filtered = rows.filter((r: any) => {
@@ -720,15 +733,33 @@ function AcademicReportSection() {
   const students = useMemo(() => {
     const map = new Map<string, string>();
     rows.forEach((r: any) => {
+      if (!allowedClassIds.includes(r.students?.class_id)) return;
       if (classId === "all" || r.students?.class_id === classId) map.set(r.student_id, r.students?.full_name ?? "");
     });
     return Array.from(map, ([id, name]) => ({ id, name }));
-  }, [rows, classId]);
+  }, [rows, classId, allowedClassIds.join(",")]);
 
   const levelData = LEVEL_ORDER.map((lvl) => ({
     name: lvl,
     value: filtered.filter((r: any) => r.level === lvl).length,
   }));
+  const totalRecords = filtered.length;
+  const levelScore = (lvl: string) => 4 - LEVEL_ORDER.indexOf(lvl);
+  const overallAvg = totalRecords
+    ? (filtered.reduce((s: number, r: any) => s + levelScore(r.level), 0) / totalRecords).toFixed(2)
+    : "0";
+
+  // متوسط المستوى حسب المادة (من 4)
+  const subjectAvg = subjects
+    .map((s: any) => {
+      const list = filtered.filter((r: any) => r.subject_id === s.id);
+      return {
+        name: s.name,
+        avg: list.length ? Number((list.reduce((a: number, r: any) => a + levelScore(r.level), 0) / list.length).toFixed(2)) : 0,
+        count: list.length,
+      };
+    })
+    .filter((s: any) => s.count > 0);
 
   const subjectData = subjects.map((s: any) => {
     const list = filtered.filter((r: any) => r.subject_id === s.id);
@@ -737,15 +768,163 @@ function AcademicReportSection() {
     return row;
   }).filter((r: any) => LEVEL_ORDER.some((l) => r[l] > 0));
 
+  // جدول الطلاب × المواد
+  const gridStudents = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; klass: string; cells: Record<string, string> }>();
+    filtered.forEach((r: any) => {
+      const cur = map.get(r.student_id) || {
+        id: r.student_id,
+        name: r.students?.full_name ?? "—",
+        klass: r.students?.classes?.name ?? "—",
+        cells: {},
+      };
+      cur.cells[r.subject_id] = r.level;
+      map.set(r.student_id, cur);
+    });
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, "ar"));
+  }, [filtered]);
+
+  const weakStudents = useMemo(() => {
+    const map = new Map<string, { name: string; klass: string; count: number }>();
+    filtered.filter((r: any) => r.level === "ضعيف").forEach((r: any) => {
+      const cur = map.get(r.student_id) || { name: r.students?.full_name ?? "—", klass: r.students?.classes?.name ?? "—", count: 0 };
+      cur.count++;
+      map.set(r.student_id, cur);
+    });
+    return Array.from(map.values()).sort((a, b) => b.count - a.count);
+  }, [filtered]);
+
+  const studentTrend = useMemo(() => {
+    if (studentId === "all") return [];
+    const byMonth = new Map<string, number[]>();
+    studentHistory.forEach((r: any) => {
+      if (allowedSubjectIds.length && !allowedSubjectIds.includes(r.subject_id)) return;
+      const m = String(r.month).slice(0, 7);
+      byMonth.set(m, [...(byMonth.get(m) ?? []), levelScore(r.level)]);
+    });
+    return Array.from(byMonth, ([m, list]) => ({
+      month: m,
+      avg: Number((list.reduce((a, b) => a + b, 0) / list.length).toFixed(2)),
+    }));
+  }, [studentHistory, studentId, allowedSubjectIds.join(",")]);
+
+  const className = classes.find((c: any) => c.id === classId)?.name || "كل الصفوف";
+  const subjectName = subjects.find((s: any) => s.id === subjectId)?.name || "كل المواد";
+  const studentName = students.find((s) => s.id === studentId)?.name || "";
+
+  function buildHtml(autoPrint: boolean) {
+    const esc = (s: any) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
+    const charts = Array.from(document.querySelectorAll<HTMLElement>("[data-academic-chart]"))
+      .map((node) => {
+        const title = node.getAttribute("data-academic-chart") || "";
+        const svg = node.querySelector("svg.recharts-surface") as SVGSVGElement | null;
+        if (!svg) return "";
+        const clone = svg.cloneNode(true) as SVGSVGElement;
+        const w = svg.getBoundingClientRect().width || 600;
+        const h = svg.getBoundingClientRect().height || 260;
+        if (!clone.getAttribute("viewBox")) clone.setAttribute("viewBox", `0 0 ${w} ${h}`);
+        clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+        clone.removeAttribute("width");
+        clone.removeAttribute("height");
+        clone.setAttribute("preserveAspectRatio", "xMidYMid meet");
+        return `<div class="chart"><h3>${esc(title)}</h3>${clone.outerHTML}</div>`;
+      })
+      .join("");
+
+    const subjHead = subjects.map((s: any) => `<th>${esc(s.name)}</th>`).join("");
+    const gridRows = gridStudents
+      .map(
+        (st) => `<tr><td>${esc(st.name)}</td><td>${esc(st.klass)}</td>${subjects
+          .map((s: any) => {
+            const lvl = st.cells[s.id];
+            return `<td style="text-align:center;color:${lvl ? LEVEL_COLOR[lvl] : "#999"};font-weight:600">${esc(lvl || "—")}</td>`;
+          })
+          .join("")}</tr>`,
+      )
+      .join("");
+
+    const summary = LEVEL_ORDER.map((l) => {
+      const n = levelData.find((d) => d.name === l)?.value ?? 0;
+      const pct = totalRecords ? Math.round((n / totalRecords) * 100) : 0;
+      return `<div class="stat" style="border-color:${LEVEL_COLOR[l]}"><b style="color:${LEVEL_COLOR[l]}">${n}</b>${esc(l)} (${pct}%)</div>`;
+    }).join("");
+
+    return `<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>التقرير الأكاديمي</title>
+    <style>
+      @page { size: A4 landscape; margin: 12mm; }
+      body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; color:#111; }
+      .header { text-align:center; border-bottom:3px solid #1d4ed8; padding-bottom:10px; margin-bottom:12px; }
+      .header h1 { margin:0; color:#1d4ed8; font-size:22px; }
+      .header p { margin:3px 0; font-size:13px; color:#555; }
+      .stats { display:flex; gap:8px; margin:10px 0; }
+      .stat { flex:1; border:2px solid #e5e7eb; border-radius:8px; padding:8px; text-align:center; font-size:12px; }
+      .stat b { display:block; font-size:18px; }
+      .charts { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:12px 0; }
+      .chart { border:1px solid #e5e7eb; border-radius:8px; padding:8px; page-break-inside:avoid; }
+      .chart h3 { margin:0 0 6px; font-size:13px; color:#1d4ed8; text-align:center; }
+      .chart svg { width:100% !important; height:auto !important; max-height:240px; }
+      table { width:100%; border-collapse:collapse; font-size:12px; }
+      thead { display: table-header-group; }
+      tr { page-break-inside:avoid; }
+      th,td { border:1px solid #d1d5db; padding:6px; text-align:right; }
+      th { background:#1d4ed8; color:#fff; }
+      tr:nth-child(even) td { background:#f9fafb; }
+      h2 { color:#1d4ed8; font-size:15px; margin:14px 0 6px; }
+      .footer { margin-top:16px; text-align:center; font-size:11px; color:#777; border-top:1px solid #e5e7eb; padding-top:6px; }
+    </style></head><body>
+      <div class="header">
+        ${settings.logo_url ? `<img src="${esc(settings.logo_url)}" style="height:60px;object-fit:contain" />` : ""}
+        <h1>${esc(displayName)}</h1>
+        <p><b>التقرير الأكاديمي الشهري</b> — ${esc(month)}</p>
+        <p>${esc(className)} — ${esc(subjectName)}${studentName ? ` — الطالب: ${esc(studentName)}` : ""}${currentTerm ? ` — ${esc(currentTerm.name)}` : ""}</p>
+      </div>
+      <div class="stats">${summary}<div class="stat"><b>${overallAvg}</b>المعدل العام (من 4)</div></div>
+      ${charts ? `<h2>الرسوم البيانية</h2><div class="charts">${charts}</div>` : ""}
+      <h2>الطلاب حسب المواد</h2>
+      <table><thead><tr><th>الطالب</th><th>الصف</th>${subjHead}</tr></thead>
+        <tbody>${gridRows || `<tr><td colspan="${subjects.length + 2}" style="text-align:center;padding:16px">لا توجد بيانات</td></tr>`}</tbody></table>
+      ${weakStudents.length ? `<h2>طلاب بحاجة إلى متابعة</h2><table><thead><tr><th>الطالب</th><th>الصف</th><th>عدد المواد بمستوى ضعيف</th></tr></thead><tbody>${weakStudents
+        .map((s) => `<tr><td>${esc(s.name)}</td><td>${esc(s.klass)}</td><td style="text-align:center">${s.count}</td></tr>`)
+        .join("")}</tbody></table>` : ""}
+      <div class="footer">تاريخ التقرير: ${new Date().toLocaleDateString("ar-EG")}</div>
+      ${autoPrint ? `<script>window.onload=()=>setTimeout(()=>window.print(),300);<\/script>` : ""}
+    </body></html>`;
+  }
+
+  function printAcademic() {
+    const w = window.open("", "_blank");
+    if (!w) return;
+    w.document.open(); w.document.write(buildHtml(true)); w.document.close();
+  }
+  function downloadAcademic() {
+    const blob = new Blob([buildHtml(false)], { type: "text/html;charset=utf-8" });
+    saveAs(blob, `التقرير_الأكاديمي_${month}.html`);
+  }
+
   return (
     <Card className="border-0 shadow-card">
       <CardHeader className="flex flex-row items-center justify-between gap-2 flex-wrap">
         <CardTitle>التقرير الأكاديمي الشهري</CardTitle>
-        <Button variant="outline" size="sm" className="print:hidden" onClick={() => window.print()}>
-          <Printer className="w-4 h-4 ml-1" /> طباعة
-        </Button>
+        <div className="flex gap-2 print:hidden">
+          <Button variant="outline" size="sm" onClick={downloadAcademic}>
+            <Download className="w-4 h-4 ml-1" /> تحميل نسخة
+          </Button>
+          <Button size="sm" onClick={printAcademic}>
+            <Printer className="w-4 h-4 ml-1" /> طباعة / PDF
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-5">
+        <div className="text-center border-b pb-3">
+          {settings.logo_url && <img src={settings.logo_url} alt="شعار المدرسة" className="w-14 h-14 mx-auto object-contain mb-1" />}
+          <p className="font-bold">{displayName}</p>
+          <p className="text-sm text-muted-foreground">
+            {month} — {className} — {subjectName}
+            {studentName ? ` — ${studentName}` : ""}
+            {currentTerm ? ` — ${currentTerm.name}` : ""}
+          </p>
+        </div>
+
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 print:hidden">
           <div className="space-y-2"><Label>الشهر</Label><Input type="month" value={month} onChange={(e) => setMonth(e.target.value)} /></div>
           <div className="space-y-2">
@@ -762,7 +941,7 @@ function AcademicReportSection() {
             <Label>الطالب</Label>
             <Select value={studentId} onValueChange={setStudentId}>
               <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-h-72">
                 <SelectItem value="all">كل الطلاب</SelectItem>
                 {students.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
               </SelectContent>
@@ -780,8 +959,25 @@ function AcademicReportSection() {
           </div>
         </div>
 
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+          {LEVEL_ORDER.map((l) => {
+            const n = levelData.find((d) => d.name === l)?.value ?? 0;
+            const pct = totalRecords ? Math.round((n / totalRecords) * 100) : 0;
+            return (
+              <div key={l} className="rounded-lg border-2 p-3 text-center" style={{ borderColor: LEVEL_COLOR[l] }}>
+                <p className="text-2xl font-bold" style={{ color: LEVEL_COLOR[l] }}>{n}</p>
+                <p className="text-xs text-muted-foreground">{l} ({pct}%)</p>
+              </div>
+            );
+          })}
+          <div className="rounded-lg border-2 border-primary/30 p-3 text-center">
+            <p className="text-2xl font-bold text-primary">{overallAvg}</p>
+            <p className="text-xs text-muted-foreground">المعدل العام (من 4)</p>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="h-64">
+          <div className="h-64" data-academic-chart="توزيع المستويات">
             <p className="text-sm font-medium mb-2">توزيع المستويات</p>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -793,7 +989,22 @@ function AcademicReportSection() {
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <div className="h-64">
+          <div className="h-64" data-academic-chart="متوسط المستوى حسب المادة">
+            <p className="text-sm font-medium mb-2">متوسط المستوى حسب المادة (من 4)</p>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={subjectAvg}>
+                <XAxis dataKey="name" fontSize={11} />
+                <YAxis domain={[0, 4]} fontSize={11} />
+                <Tooltip />
+                <Bar dataKey="avg" name="المتوسط" radius={[6, 6, 0, 0]}>
+                  {subjectAvg.map((s: any, i: number) => (
+                    <Cell key={i} fill={s.avg >= 3.5 ? "#10b981" : s.avg >= 2.5 ? "#0ea5e9" : s.avg >= 1.5 ? "#f59e0b" : "#ef4444"} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="h-64" data-academic-chart="المستويات حسب المادة">
             <p className="text-sm font-medium mb-2">المستويات حسب المادة</p>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={subjectData}>
@@ -805,27 +1016,68 @@ function AcademicReportSection() {
               </BarChart>
             </ResponsiveContainer>
           </div>
+          {studentId !== "all" && (
+            <div className="h-64" data-academic-chart="تطور مستوى الطالب عبر الأشهر">
+              <p className="text-sm font-medium mb-2">تطور مستوى الطالب عبر الأشهر</p>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={studentTrend}>
+                  <XAxis dataKey="month" fontSize={11} />
+                  <YAxis domain={[0, 4]} fontSize={11} />
+                  <Tooltip />
+                  <Line type="monotone" dataKey="avg" name="المستوى" stroke="#1d4ed8" strokeWidth={2} dot={{ r: 3 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <p className="text-sm font-medium mb-2">الطلاب حسب المواد</p>
+          <table className="w-full text-sm border-collapse">
             <thead className="bg-secondary">
-              <tr><th className="p-2 text-right">الطالب</th><th className="p-2 text-right">الصف</th><th className="p-2 text-right">المادة</th><th className="p-2 text-right">المستوى</th></tr>
+              <tr>
+                <th className="border p-2 text-right">الطالب</th>
+                <th className="border p-2 text-right">الصف</th>
+                {subjects.map((s: any) => <th key={s.id} className="border p-2">{s.name}</th>)}
+              </tr>
             </thead>
             <tbody>
-              {filtered.map((r: any) => (
-                <tr key={r.id} className="border-t">
-                  <td className="p-2 font-medium">{r.students?.full_name}</td>
-                  <td className="p-2">{r.students?.classes?.name || "—"}</td>
-                  <td className="p-2">{r.subjects?.name || "—"}</td>
-                  <td className="p-2 font-medium" style={{ color: LEVEL_COLOR[r.level] }}>{r.level}</td>
+              {gridStudents.map((st) => (
+                <tr key={st.id}>
+                  <td className="border p-2 font-medium">{st.name}</td>
+                  <td className="border p-2">{st.klass}</td>
+                  {subjects.map((s: any) => {
+                    const lvl = st.cells[s.id];
+                    return (
+                      <td key={s.id} className="border p-2 text-center font-medium" style={{ color: lvl ? LEVEL_COLOR[lvl] : undefined }}>
+                        {lvl || "—"}
+                      </td>
+                    );
+                  })}
                 </tr>
               ))}
-              {filtered.length === 0 && <tr><td colSpan={4} className="p-6 text-center text-muted-foreground">لا توجد بيانات لهذا الشهر</td></tr>}
+              {gridStudents.length === 0 && (
+                <tr><td colSpan={subjects.length + 2} className="p-6 text-center text-muted-foreground">لا توجد بيانات لهذا الشهر</td></tr>
+              )}
             </tbody>
           </table>
         </div>
+
+        {weakStudents.length > 0 && (
+          <div className="rounded-lg border border-rose-200 bg-rose-50/60 p-3">
+            <p className="text-sm font-bold text-rose-700 mb-2">طلاب بحاجة إلى متابعة ({weakStudents.length})</p>
+            <div className="space-y-1">
+              {weakStudents.map((s, i) => (
+                <div key={i} className="flex items-center justify-between text-sm">
+                  <span>{s.name} <span className="text-muted-foreground">— {s.klass}</span></span>
+                  <span className="font-bold text-rose-700">{s.count} مادة</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
 }
+
