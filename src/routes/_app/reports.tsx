@@ -127,7 +127,8 @@ function ReportsPage() {
   );
 
   const { data: violations = [] } = useQuery({
-    queryKey: ["violations-report", from, to, stage, classId, grade, studentId, severity, typeId],
+    queryKey: ["violations-report", from, to, stage, classId, grade, studentId, severity, typeId, isTeacher, teacherHasClasses, myClassIds?.join(",")],
+    enabled: !isTeacher || myClassIds !== undefined,
     queryFn: async () => {
       let q = supabase.from("violations")
         .select("*, students(id, full_name, class_id, classes(id, name, grade, stage)), violation_types(id, name, severity)")
@@ -143,6 +144,12 @@ function ReportsPage() {
         const map = new Map((profs ?? []).map((p: any) => [p.id, p]));
         list.forEach((v: any) => { v.profiles = map.get(v.created_by) ?? null; });
       }
+      // نطاق المعلم: صفوفه المسندة، وإلا ما سجّله هو فقط
+      if (isTeacher) {
+        list = teacherHasClasses
+          ? list.filter((v: any) => myClassIds!.includes(v.students?.class_id))
+          : list.filter((v: any) => v.created_by === user?.id);
+      }
       if (classId !== "all") list = list.filter((v: any) => v.students?.classes?.id === classId);
       if (grade !== "all") list = list.filter((v: any) => v.students?.classes?.grade === grade);
       if (stage !== "all") list = list.filter((v: any) => v.students?.classes?.stage === stage);
@@ -150,6 +157,7 @@ function ReportsPage() {
       return list;
     },
   });
+
 
 
 
