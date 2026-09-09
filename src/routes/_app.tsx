@@ -1,10 +1,13 @@
-import { createFileRoute, Outlet, redirect, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { AppHeader } from "@/components/app-header";
 import { AppSidebar, MobileBar } from "@/components/app-sidebar";
+import { usePagePermissions } from "@/hooks/use-page-permissions";
+import { pageByPath } from "@/lib/pages";
 import { useSettings } from "@/hooks/use-settings";
 import { DEVELOPER_CREDIT } from "@/lib/branding";
+import { Lock } from "lucide-react";
 
 export const Route = createFileRoute("/_app")({ component: AppLayout });
 
@@ -12,6 +15,8 @@ function AppLayout() {
   const { user, loading } = useAuth();
   const { settings } = useSettings();
   const navigate = useNavigate();
+  const perms = usePagePermissions();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/login" });
@@ -20,6 +25,10 @@ function AppLayout() {
   if (loading || !user) {
     return <div className="min-h-screen flex items-center justify-center text-muted-foreground">جارٍ التحميل...</div>;
   }
+
+  const page = pageByPath(pathname);
+  const blocked = !!page && !perms.loading && !perms.isVisible(page.key);
+
 
   return (
     <div className="min-h-screen flex bg-background">
