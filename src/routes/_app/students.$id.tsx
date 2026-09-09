@@ -399,7 +399,7 @@ function AcademicJourney({ studentId }: { studentId: string }) {
                 </tbody>
               </table>
             </div>
-            <div>
+            <div data-print-chart="تطور المستوى الأكاديمي">
               <p className="text-sm font-medium mb-2">تطور المستوى العام</p>
               <ResponsiveContainer width="100%" height={220}>
                 <LineChart data={trend}>
@@ -411,6 +411,7 @@ function AcademicJourney({ studentId }: { studentId: string }) {
                 </LineChart>
               </ResponsiveContainer>
             </div>
+
           </>
         )}
       </CardContent>
