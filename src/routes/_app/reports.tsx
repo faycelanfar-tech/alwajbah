@@ -776,7 +776,7 @@ function AcademicReportSection() {
         id: r.student_id,
         name: r.students?.full_name ?? "—",
         klass: r.students?.classes?.name ?? "—",
-        cells: {},
+        cells: {} as Record<string, string>,
       };
       cur.cells[r.subject_id] = r.level;
       map.set(r.student_id, cur);
