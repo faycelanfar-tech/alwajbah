@@ -271,17 +271,39 @@ function StudentProfile() {
       <Card className="border-0 shadow-card">
         <CardHeader><CardTitle>تطور النقاط</CardTitle></CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={260}>
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip />
-              <Line type="monotone" dataKey="points" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
-            </LineChart>
-          </ResponsiveContainer>
+          <div data-print-chart="تطور النقاط">
+            <ResponsiveContainer width="100%" height={260}>
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Line type="monotone" dataKey="points" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </CardContent>
       </Card>
+
+      {severityData.length > 0 && (
+        <Card className="border-0 shadow-card">
+          <CardHeader><CardTitle>توزيع المخالفات حسب الدرجة</CardTitle></CardHeader>
+          <CardContent>
+            <div data-print-chart="توزيع المخالفات حسب الدرجة">
+              <ResponsiveContainer width="100%" height={260}>
+                <PieChart>
+                  <Pie data={severityData} dataKey="value" nameKey="name" outerRadius={90} label>
+                    {severityData.map((d, i) => <Cell key={d.name} fill={["#10b981", "#f59e0b", "#f97316", "#ef4444"][i % 4]} />)}
+                  </Pie>
+                  <Legend />
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
 
       <AcademicJourney studentId={id} />
 
