@@ -3,6 +3,7 @@ import { useSettings } from "@/hooks/use-settings";
 import { NotificationsBell } from "@/components/notifications-bell";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ChangePasswordDialog } from "@/components/change-password-dialog";
+import { GlobalSearch } from "@/components/global-search";
 import { ROLE_LABELS } from "@/components/app-sidebar";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -32,6 +33,7 @@ export function AppHeader() {
               <p className="text-xs text-muted-foreground">{ROLE_LABELS[role ?? ""] ?? "مستخدم"}</p>
             </div>
           )}
+          <GlobalSearch />
           <NotificationsBell />
           <ChangePasswordDialog />
           <ThemeToggle />

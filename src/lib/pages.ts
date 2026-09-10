@@ -21,7 +21,7 @@ export const APP_PAGES: AppPage[] = [
   { key: "positive", to: "/positive", label: "السلوك الإيجابي", icon: Sparkles, roles: VIEWERS },
   { key: "academic", to: "/academic", label: "التقرير الأكاديمي", icon: BookOpen, roles: VIEWERS },
   { key: "rewards", to: "/rewards", label: "النقاط والمكافآت", icon: Trophy, roles: ["admin", "teacher"] },
-  { key: "students", to: "/students", label: "الطلاب", icon: GraduationCap, roles: ["admin", "teacher"] },
+  { key: "students", to: "/students", label: "الطلاب", icon: GraduationCap, roles: ["admin", "supervisor", "teacher"] },
   { key: "classes", to: "/classes", label: "الفصول", icon: Users, roles: ["admin"] },
   { key: "teachers", to: "/teachers", label: "المعلمون والحسابات", icon: UserCog, roles: ["admin"] },
   { key: "reports", to: "/reports", label: "التقارير", icon: FileBarChart, roles: VIEWERS },
