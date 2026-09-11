@@ -12,6 +12,8 @@ interface AuthCtx {
   session: Session | null;
   role: Role | null;
   profile: { username: string; full_name: string | null } | null;
+  /** حساب مسؤول الموقع (admin) — صلاحيات كاملة ومخفي عن الجميع */
+  isOwner: boolean;
   loading: boolean;
   signIn: (username: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
