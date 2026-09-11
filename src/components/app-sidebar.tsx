@@ -4,12 +4,12 @@ import { useSettings } from "@/hooks/use-settings";
 import { usePagePermissions } from "@/hooks/use-page-permissions";
 import { LogOut, School } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ROLE_LABELS } from "@/lib/branding";
+import { ROLE_LABELS, SITE_OWNER_LABEL } from "@/lib/branding";
 
 export { ROLE_LABELS };
 
 export function AppSidebar() {
-  const { role, profile, signOut } = useAuth();
+  const { role, profile, signOut, isOwner } = useAuth();
   const { settings, displayName } = useSettings();
   const { visiblePages } = usePagePermissions();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -61,7 +61,7 @@ export function AppSidebar() {
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium truncate">{profile?.full_name || profile?.username}</p>
-            <p className="text-xs text-sidebar-foreground/60">{ROLE_LABELS[role ?? ""] ?? "مستخدم"}</p>
+            <p className="text-xs text-sidebar-foreground/60">{isOwner ? SITE_OWNER_LABEL : (ROLE_LABELS[role ?? ""] ?? "مستخدم")}</p>
           </div>
         </div>
         <button onClick={signOut} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-destructive hover:bg-destructive/10 transition-colors">

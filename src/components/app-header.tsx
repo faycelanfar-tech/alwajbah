@@ -9,7 +9,7 @@ import { useAuth } from "@/hooks/use-auth";
 
 export function AppHeader() {
   const { settings, displayName } = useSettings();
-  const { role, profile } = useAuth();
+  const { role, profile, isOwner } = useAuth();
   return (
     <header className="sticky top-0 z-40 bg-card/85 backdrop-blur border-b">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 px-4 md:px-8 py-3">
@@ -30,7 +30,7 @@ export function AppHeader() {
           {profile && (
             <div className="hidden sm:block text-left ml-2 min-w-0">
               <p className="text-sm font-medium truncate">{profile.full_name || profile.username}</p>
-              <p className="text-xs text-muted-foreground">{ROLE_LABELS[role ?? ""] ?? "مستخدم"}</p>
+              <p className="text-xs text-muted-foreground">{isOwner ? SITE_OWNER_LABEL : (ROLE_LABELS[role ?? ""] ?? "مستخدم")}</p>
             </div>
           )}
           <GlobalSearch />
