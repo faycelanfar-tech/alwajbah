@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Session, User } from "@supabase/supabase-js";
 
 import type { AppRole } from "@/lib/branding";
+import { isSiteOwnerUsername } from "@/lib/branding";
 
 type Role = AppRole;
 
