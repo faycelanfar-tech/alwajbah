@@ -130,7 +130,7 @@ export const adminDeleteUser = createServerFn({ method: "POST" })
     const a = admin();
     const uid = data.userId;
 
-    const { data: target } = await a.from("profiles").select("username").eq("id", uid).maybeSingle();
+    const { data: target } = await a.from("profiles").select("username, full_name").eq("id", uid).maybeSingle();
     if ((target as any)?.username === "admin") throw new Error("هذا الحساب محمي ولا يمكن حذفه");
 
 
@@ -150,5 +150,13 @@ export const adminDeleteUser = createServerFn({ method: "POST" })
 
     const { error } = await a.auth.admin.deleteUser(uid);
     if (error) throw new Error(error.message);
+
+    await logAccountActivity(
+      a,
+      context.userId,
+      "deleted",
+      uid,
+      `حذف حساب ${(target as any)?.full_name || (target as any)?.username || ""}`.trim(),
+    );
     return { ok: true };
   });
