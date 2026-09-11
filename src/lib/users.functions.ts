@@ -112,6 +112,8 @@ export const adminCreateUser = createServerFn({ method: "POST" })
         await a.from("teacher_classes").insert(data.class_ids.map((c) => ({ user_id: uid, class_id: c })));
     }
 
+    await logAccountActivity(a, context.userId, "created", uid, `إنشاء حساب ${data.full_name} (${data.username})`);
+
     return { ok: true, userId: uid };
   });
 
