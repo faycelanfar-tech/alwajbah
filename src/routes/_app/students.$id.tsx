@@ -20,7 +20,7 @@ const severityColor: Record<string, string> = {
 
 function StudentProfile() {
   const { id } = Route.useParams();
-  const { settings, displayName, levelColor } = useSettings();
+  const { settings, displayName, levelColor, behaviorLevelFor } = useSettings();
 
   const { data: student } = useQuery({
     queryKey: ["student", id],
