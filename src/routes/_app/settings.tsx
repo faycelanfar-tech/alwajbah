@@ -99,6 +99,8 @@ function SettingsPage() {
 
       <GradingCard />
 
+      <BehaviorLevelsCard />
+
       <PagePermissionsCard />
     </div>
 
@@ -336,6 +338,101 @@ function GradingCard() {
             </div>
           </div>
         ))}
+      </CardContent>
+    </Card>
+  );
+}
+
+function BehaviorLevelsCard() {
+  const { refresh } = useSettings();
+  const qc = useQueryClient();
+
+  const { data: levels = [] } = useQuery({
+    queryKey: ["behavior_levels"],
+    queryFn: async () => (await supabase.from("behavior_levels").select("*").order("sort_order")).data ?? [],
+  });
+
+  const done = async (msg: string) => {
+    toast.success(msg);
+    await qc.invalidateQueries({ queryKey: ["behavior_levels"] });
+    await refresh();
+  };
+
+  const update = useMutation({
+    mutationFn: async ({ id, patch }: { id: string; patch: any }) => {
+      const { error } = await supabase.from("behavior_levels").update(patch).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => done("تم حفظ مستويات السلوك"),
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const add = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("behavior_levels").insert({
+        label: "مستوى جديد",
+        color: "#2563eb",
+        min_violations: 0,
+        max_violations: null,
+        sort_order: (levels.length ? Math.max(...levels.map((l: any) => l.sort_order)) : 0) + 1,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => done("تمت إضافة المستوى"),
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const remove = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("behavior_levels").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => done("تم حذف المستوى"),
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  return (
+    <Card className="border-0 shadow-card">
+      <CardHeader className="flex-row items-center justify-between gap-2">
+        <CardTitle>مستويات السلوك الشهري</CardTitle>
+        <Button size="sm" variant="outline" onClick={() => add.mutate()}>إضافة مستوى</Button>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <p className="text-sm text-muted-foreground">
+          يُحتسب المستوى السلوكي للطالب تلقائياً حسب عدد مخالفاته خلال الشهر. اترك خانة «إلى عدد» فارغة لتعني «فأكثر».
+        </p>
+        {levels.map((l: any) => (
+          <div key={l.id} className="border rounded-lg p-2 grid grid-cols-2 sm:grid-cols-5 gap-2 items-center">
+            <div className="space-y-1">
+              <Label className="text-xs">المستوى</Label>
+              <Input defaultValue={l.label} onBlur={(e) => e.target.value.trim() !== l.label && update.mutate({ id: l.id, patch: { label: e.target.value.trim() } })} />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">اللون</Label>
+              <Input type="color" className="h-10 p-1" defaultValue={l.color} onBlur={(e) => e.target.value !== l.color && update.mutate({ id: l.id, patch: { color: e.target.value } })} />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">من عدد المخالفات</Label>
+              <Input type="number" min={0} defaultValue={l.min_violations} onBlur={(e) => Number(e.target.value) !== l.min_violations && update.mutate({ id: l.id, patch: { min_violations: Number(e.target.value) } })} />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">إلى عدد (فارغ = فأكثر)</Label>
+              <Input
+                type="number"
+                min={0}
+                defaultValue={l.max_violations ?? ""}
+                onBlur={(e) => {
+                  const v = e.target.value.trim() === "" ? null : Number(e.target.value);
+                  if (v !== l.max_violations) update.mutate({ id: l.id, patch: { max_violations: v } });
+                }}
+              />
+            </div>
+            <Button variant="ghost" size="sm" className="text-rose-600 justify-self-start sm:mt-5" onClick={() => remove.mutate(l.id)}>
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
+        ))}
+        {levels.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">لم تتم إضافة مستويات سلوك بعد</p>}
       </CardContent>
     </Card>
   );

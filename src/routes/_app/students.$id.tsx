@@ -20,7 +20,7 @@ const severityColor: Record<string, string> = {
 
 function StudentProfile() {
   const { id } = Route.useParams();
-  const { settings, displayName, levelColor } = useSettings();
+  const { settings, displayName, levelColor, behaviorLevelFor } = useSettings();
 
   const { data: student } = useQuery({
     queryKey: ["student", id],
@@ -72,6 +72,24 @@ function StudentProfile() {
       .map((s) => ({ name: `الدرجة ${s}`, value: violations.filter((v: any) => v.violation_types?.severity === s).length }))
       .filter((d) => d.value > 0);
   }, [violations]);
+
+  const behaviorMonths = useMemo(() => {
+    const counts: Record<string, number> = {};
+    violations.forEach((v: any) => {
+      const key = String(v.violation_date).slice(0, 7);
+      counts[key] = (counts[key] ?? 0) + 1;
+    });
+    const months: string[] = [];
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+    }
+    return months.map((m) => {
+      const count = counts[m] ?? 0;
+      return { month: m, count, level: behaviorLevelFor(count) };
+    });
+  }, [violations, behaviorLevelFor]);
 
   const { data: academic = [] } = useQuery({
     queryKey: ["student-academic", id],
@@ -304,6 +322,26 @@ function StudentProfile() {
         </Card>
       )}
 
+
+      <Card className="border-0 shadow-card">
+        <CardHeader><CardTitle>المستوى السلوكي الشهري</CardTitle></CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+            {behaviorMonths.map((m) => (
+              <div key={m.month} className="border rounded-lg p-2 text-center space-y-1">
+                <p className="text-xs text-muted-foreground">{m.month}</p>
+                <p className="text-lg font-bold">{m.count}</p>
+                {m.level && (
+                  <span
+                    className="inline-block px-2 py-0.5 rounded border text-xs font-medium"
+                    style={{ color: m.level.color, borderColor: m.level.color, backgroundColor: `${m.level.color}1a` }}
+                  >{m.level.label}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       <AcademicJourney studentId={id} />
 

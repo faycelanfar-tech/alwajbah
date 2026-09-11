@@ -30,10 +30,17 @@ export const Route = createFileRoute("/_app/academic")({
 });
 
 const monthKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+const monthRange = (month: string) => {
+  const [y, m] = month.split("-").map(Number);
+  const start = `${month}-01`;
+  const endDate = new Date(y, m, 0);
+  const end = `${month}-${String(endDate.getDate()).padStart(2, "0")}`;
+  return { start, end };
+};
 
 function AcademicPage() {
   const { user, role } = useAuth();
-  const { settings } = useSettings();
+  const { settings, academicLevelFor } = useSettings();
   const qc = useQueryClient();
   const readOnly = isReadOnlyRole(role) || role === "supervisor";
 
@@ -41,6 +48,7 @@ function AcademicPage() {
   const [classId, setClassId] = useState("");
   const [subjectId, setSubjectId] = useState("");
   const [levels, setLevels] = useState<Record<string, string>>({});
+  const [scores, setScores] = useState<Record<string, string>>({});
 
   const monthDate = `${month}-01`;
 
@@ -98,8 +106,13 @@ function AcademicPage() {
       if (!ids.length) return [];
       const { data } = await supabase.from("academic_reports").select("*").eq("month", monthDate).eq("subject_id", subjectId).in("student_id", ids);
       const map: Record<string, string> = {};
-      (data ?? []).forEach((r: any) => { map[r.student_id] = r.level; });
+      const sc: Record<string, string> = {};
+      (data ?? []).forEach((r: any) => {
+        map[r.student_id] = r.level;
+        if (r.score !== null && r.score !== undefined) sc[r.student_id] = String(r.score);
+      });
       setLevels(map);
+      setScores(sc);
       return data ?? [];
     },
   });
@@ -108,7 +121,14 @@ function AcademicPage() {
     mutationFn: async () => {
       const rows = Object.entries(levels)
         .filter(([, lvl]) => !!lvl)
-        .map(([student_id, level]) => ({ student_id, subject_id: subjectId, month: monthDate, level, created_by: user?.id }));
+        .map(([student_id, level]) => ({
+          student_id,
+          subject_id: subjectId,
+          month: monthDate,
+          level,
+          score: scores[student_id]?.trim() ? Number(scores[student_id]) : null,
+          created_by: user?.id,
+        }));
       if (!rows.length) throw new Error("لم يتم تحديد أي مستوى");
       const { error } = await supabase.from("academic_reports").upsert(rows as any, { onConflict: "student_id,subject_id,month" });
       if (error) throw error;
@@ -117,6 +137,7 @@ function AcademicPage() {
       toast.success("تم حفظ التقرير الأكاديمي");
       qc.invalidateQueries({ queryKey: ["academic"] });
       qc.invalidateQueries({ queryKey: ["academic-monthly"] });
+      qc.invalidateQueries({ queryKey: ["combined-monthly"] });
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -125,6 +146,12 @@ function AcademicPage() {
     const next: Record<string, string> = {};
     students.forEach((s: any) => { next[s.id] = lvl; });
     setLevels(next);
+  };
+
+  const setScore = (studentId: string, value: string) => {
+    setScores((prev) => ({ ...prev, [studentId]: value }));
+    const derived = academicLevelFor(value.trim() === "" ? null : Number(value));
+    if (derived) setLevels((prev) => ({ ...prev, [studentId]: derived }));
   };
 
   return (
@@ -140,6 +167,7 @@ function AcademicPage() {
         <TabsList className="print:hidden">
           <TabsTrigger value="entry">الرصد</TabsTrigger>
           <TabsTrigger value="report">التقرير الشهري</TabsTrigger>
+          <TabsTrigger value="combined">التقرير الموحّد</TabsTrigger>
         </TabsList>
 
         <TabsContent value="entry" className="mt-4 space-y-4">
@@ -149,14 +177,14 @@ function AcademicPage() {
               <div className="space-y-2"><Label>الشهر</Label><Input type="month" value={month} onChange={(e) => setMonth(e.target.value)} /></div>
               <div className="space-y-2">
                 <Label>الصف</Label>
-                <Select value={classId} onValueChange={(v) => { setClassId(v); setLevels({}); }}>
+                <Select value={classId} onValueChange={(v) => { setClassId(v); setLevels({}); setScores({}); }}>
                   <SelectTrigger><SelectValue placeholder="اختر الصف" /></SelectTrigger>
                   <SelectContent>{classes.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label>المادة</Label>
-                <Select value={subjectId} onValueChange={(v) => { setSubjectId(v); setLevels({}); }}>
+                <Select value={subjectId} onValueChange={(v) => { setSubjectId(v); setLevels({}); setScores({}); }}>
                   <SelectTrigger><SelectValue placeholder="اختر المادة" /></SelectTrigger>
                   <SelectContent>{subjects.map((s: any) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
                 </Select>
@@ -179,19 +207,33 @@ function AcademicPage() {
               </CardHeader>
               <CardContent className="space-y-2">
                 {isFetching && <Loader2 className="w-5 h-5 animate-spin mx-auto" />}
+                <p className="text-xs text-muted-foreground">
+                  يمكنك إدخال درجة الطالب فيُحدَّد المستوى تلقائياً حسب نظام التصحيح في الإعدادات، أو اختيار المستوى يدوياً.
+                </p>
                 {students.map((s: any) => (
                   <div key={s.id} className="flex items-center justify-between gap-3 p-2 rounded-lg border flex-wrap">
                     <span className="font-medium">{s.full_name}</span>
-                    <div className="flex gap-1 flex-wrap">
-                      {ACADEMIC_LEVELS.map((l) => (
-                        <Button
-                          key={l}
-                          size="sm"
-                          disabled={readOnly}
-                          variant={levels[s.id] === l ? "default" : "outline"}
-                          onClick={() => setLevels({ ...levels, [s.id]: l })}
-                        >{l}</Button>
-                      ))}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        placeholder="الدرجة"
+                        className="w-24 h-9"
+                        disabled={readOnly}
+                        value={scores[s.id] ?? ""}
+                        onChange={(e) => setScore(s.id, e.target.value)}
+                      />
+                      <div className="flex gap-1 flex-wrap">
+                        {ACADEMIC_LEVELS.map((l) => (
+                          <Button
+                            key={l}
+                            size="sm"
+                            disabled={readOnly}
+                            variant={levels[s.id] === l ? "default" : "outline"}
+                            onClick={() => setLevels({ ...levels, [s.id]: l })}
+                          >{l}</Button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -209,6 +251,10 @@ function AcademicPage() {
 
         <TabsContent value="report" className="mt-4">
           <MonthlyReport month={month} setMonth={setMonth} classId={classId} setClassId={setClassId} classes={classes} subjects={subjects} settings={settings} />
+        </TabsContent>
+
+        <TabsContent value="combined" className="mt-4">
+          <CombinedReport month={month} setMonth={setMonth} classId={classId} setClassId={setClassId} classes={classes} subjects={subjects} settings={settings} />
         </TabsContent>
       </Tabs>
     </div>
@@ -315,4 +361,185 @@ function MonthlyReport({ month, setMonth, classId, setClassId, classes, subjects
       </Card>
     </div>
   );
+}
+
+function CombinedReport({ month, setMonth, classId, setClassId, classes, subjects, settings }: any) {
+  const monthDate = `${month}-01`;
+  const { start, end } = monthRange(month);
+  const { academicLevelFor, behaviorLevelFor, behaviorLevels, levelColor } = useSettings();
+
+  const { data: students = [] } = useQuery({
+    queryKey: ["students-class-combined", classId],
+    enabled: !!classId,
+    queryFn: async () => (await supabase.from("students").select("id, full_name").eq("class_id", classId).order("full_name")).data ?? [],
+  });
+
+  const { data, isFetching } = useQuery({
+    queryKey: ["combined-monthly", month, classId, students.length],
+    enabled: !!classId && students.length > 0,
+    queryFn: async () => {
+      const ids = students.map((s: any) => s.id);
+      const [ar, vi] = await Promise.all([
+        supabase.from("academic_reports").select("*").eq("month", monthDate).in("student_id", ids),
+        supabase.from("violations").select("id, student_id").gte("violation_date", start).lte("violation_date", end).in("student_id", ids),
+      ]);
+      return { academic: ar.data ?? [], violations: vi.data ?? [] };
+    },
+  });
+
+  const academic = data?.academic ?? [];
+  const violations = data?.violations ?? [];
+
+  const perStudent = useMemo(() => {
+    const byStudent: Record<string, any[]> = {};
+    academic.forEach((r: any) => { (byStudent[r.student_id] ||= []).push(r); });
+    const counts: Record<string, number> = {};
+    violations.forEach((v: any) => { counts[v.student_id] = (counts[v.student_id] ?? 0) + 1; });
+
+    return students.map((st: any) => {
+      const recs = byStudent[st.id] ?? [];
+      const bySubject: Record<string, { level: string; score: number | null }> = {};
+      recs.forEach((r: any) => { bySubject[r.subject_id] = { level: r.level, score: r.score ?? null }; });
+      const withScores = recs.filter((r: any) => r.score !== null && r.score !== undefined);
+      const avg = withScores.length
+        ? withScores.reduce((a: number, r: any) => a + Number(r.score), 0) / withScores.length
+        : null;
+      const overall = avg !== null ? academicLevelFor(avg) : mostCommonLevel(recs.map((r: any) => r.level));
+      const vCount = counts[st.id] ?? 0;
+      return { student: st, bySubject, avg, overall, vCount, behavior: behaviorLevelFor(vCount) };
+    });
+  }, [students, academic, violations, academicLevelFor, behaviorLevelFor]);
+
+  const academicSummary = useMemo(() => {
+    const s: Record<string, number> = {};
+    perStudent.forEach((r) => { if (r.overall) s[r.overall] = (s[r.overall] ?? 0) + 1; });
+    return s;
+  }, [perStudent]);
+
+  const behaviorSummary = useMemo(() => {
+    const s: Record<string, number> = {};
+    behaviorLevels.forEach((l) => { s[l.label] = 0; });
+    perStudent.forEach((r) => { if (r.behavior) s[r.behavior.label] = (s[r.behavior.label] ?? 0) + 1; });
+    return s;
+  }, [perStudent, behaviorLevels]);
+
+  const className = classes.find((c: any) => c.id === classId)?.name || "";
+  const total = perStudent.length || 1;
+
+  return (
+    <div className="space-y-4">
+      <Card className="border-0 shadow-card print:hidden">
+        <CardContent className="p-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="space-y-2"><Label>الشهر</Label><Input type="month" value={month} onChange={(e) => setMonth(e.target.value)} /></div>
+          <div className="space-y-2">
+            <Label>الصف</Label>
+            <Select value={classId} onValueChange={setClassId}>
+              <SelectTrigger><SelectValue placeholder="اختر الصف" /></SelectTrigger>
+              <SelectContent>{classes.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-end">
+            <Button className="w-full" variant="outline" onClick={() => window.print()}><Printer className="w-4 h-4 ml-2" /> طباعة / حفظ PDF</Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-0 shadow-card">
+        <CardContent className="p-5 space-y-4">
+          <div className="text-center border-b pb-3">
+            {settings?.logo_url && <img src={settings.logo_url} alt="شعار المدرسة" className="w-16 h-16 mx-auto object-contain mb-2" />}
+            <h2 className="text-xl font-bold">{settings?.school_name || ""}</h2>
+            <p className="text-sm text-muted-foreground">التقرير الشهري الأكاديمي والسلوكي — {month} {className && `— ${className}`}</p>
+          </div>
+
+          {!classId ? (
+            <p className="text-center text-muted-foreground py-8">اختر الصف لعرض التقرير</p>
+          ) : isFetching ? (
+            <Loader2 className="w-5 h-5 animate-spin mx-auto" />
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <BarSummary title="التوزيع الأكاديمي" entries={academicSummary} total={total} color={levelColor} />
+                <BarSummary title="التوزيع السلوكي" entries={behaviorSummary} total={total} color={levelColor} />
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm border-collapse">
+                  <thead>
+                    <tr className="bg-secondary">
+                      <th className="border p-2 text-right">الطالب</th>
+                      {subjects.map((s: any) => <th key={s.id} className="border p-2">{s.name}</th>)}
+                      <th className="border p-2">المعدل</th>
+                      <th className="border p-2">المستوى الأكاديمي</th>
+                      <th className="border p-2">المخالفات</th>
+                      <th className="border p-2">المستوى السلوكي</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {perStudent.map((r) => (
+                      <tr key={r.student.id}>
+                        <td className="border p-2 font-medium">{r.student.full_name}</td>
+                        {subjects.map((s: any) => {
+                          const cell = r.bySubject[s.id];
+                          return (
+                            <td key={s.id} className="border p-2 text-center">
+                              {cell ? (
+                                <span className={`inline-block px-2 py-0.5 rounded border text-xs ${LEVEL_STYLES[cell.level] || ""}`}>
+                                  {cell.level}{cell.score !== null ? ` (${cell.score})` : ""}
+                                </span>
+                              ) : "—"}
+                            </td>
+                          );
+                        })}
+                        <td className="border p-2 text-center">{r.avg !== null ? r.avg.toFixed(1) : "—"}</td>
+                        <td className="border p-2 text-center">
+                          {r.overall ? <span className={`inline-block px-2 py-0.5 rounded border text-xs ${LEVEL_STYLES[r.overall] || ""}`}>{r.overall}</span> : "—"}
+                        </td>
+                        <td className="border p-2 text-center">{r.vCount}</td>
+                        <td className="border p-2 text-center">
+                          {r.behavior ? (
+                            <span
+                              className="inline-block px-2 py-0.5 rounded border text-xs font-medium"
+                              style={{ color: r.behavior.color, borderColor: r.behavior.color, backgroundColor: `${r.behavior.color}1a` }}
+                            >{r.behavior.label}</span>
+                          ) : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function BarSummary({ title, entries, total, color }: { title: string; entries: Record<string, number>; total: number; color: (l: string) => string }) {
+  return (
+    <div className="border rounded-lg p-3 space-y-2">
+      <p className="font-medium text-sm">{title}</p>
+      {Object.entries(entries).map(([label, count]) => (
+        <div key={label} className="space-y-1">
+          <div className="flex justify-between text-xs">
+            <span>{label}</span>
+            <span className="text-muted-foreground">{count} طالب</span>
+          </div>
+          <div className="h-2 rounded bg-secondary overflow-hidden">
+            <div className="h-full rounded" style={{ width: `${(count / total) * 100}%`, backgroundColor: color(label) }} />
+          </div>
+        </div>
+      ))}
+      {Object.keys(entries).length === 0 && <p className="text-xs text-muted-foreground">لا توجد بيانات</p>}
+    </div>
+  );
+}
+
+function mostCommonLevel(list: string[]): string | null {
+  if (!list.length) return null;
+  const counts: Record<string, number> = {};
+  list.forEach((l) => { counts[l] = (counts[l] ?? 0) + 1; });
+  return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
 }
