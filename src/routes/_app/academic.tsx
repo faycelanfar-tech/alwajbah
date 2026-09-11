@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useSettings } from "@/hooks/use-settings";
@@ -11,9 +11,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ACADEMIC_LEVELS, LEVEL_STYLES, isReadOnlyRole } from "@/lib/branding";
+import { ACADEMIC_LEVELS, LEVEL_STYLES, CHART_COLORS, isReadOnlyRole } from "@/lib/branding";
+import { buildAcademicPrintHtml, captureCharts, downloadHtml, printHtml, esc } from "@/lib/academic-print";
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { toast } from "sonner";
-import { Printer, Save, Loader2 } from "lucide-react";
+import { Printer, Save, Loader2, Download } from "lucide-react";
 
 export const Route = createFileRoute("/_app/academic")({
   component: AcademicPage,
@@ -261,8 +263,65 @@ function AcademicPage() {
   );
 }
 
+const LEVEL_SCORE: Record<string, number> = { "ممتاز": 4, "جيد": 3, "متوسط": 2, "ضعيف": 1 };
+
+function LevelPie({ title, entries, color }: { title: string; entries: Record<string, number>; color: (l: string) => string }) {
+  const data = Object.entries(entries)
+    .filter(([, v]) => v > 0)
+    .map(([name, value]) => ({ name, value }));
+  return (
+    <div className="border rounded-lg p-3" data-print-chart={title}>
+      <p className="font-medium text-sm text-center mb-1">{title}</p>
+      {data.length === 0 ? (
+        <p className="text-xs text-muted-foreground text-center py-8">لا توجد بيانات</p>
+      ) : (
+        <ResponsiveContainer width="100%" height={220}>
+          <PieChart>
+            <Pie data={data} dataKey="value" nameKey="name" outerRadius={70} label={(e: any) => `${e.name}: ${e.value}`}>
+              {data.map((d) => <Cell key={d.name} fill={color(d.name)} />)}
+            </Pie>
+            <Tooltip />
+          </PieChart>
+        </ResponsiveContainer>
+      )}
+    </div>
+  );
+}
+
+function SubjectBars({ data }: { data: { name: string; value: number }[] }) {
+  return (
+    <div className="border rounded-lg p-3" data-print-chart="متوسط المستوى حسب المادة">
+      <p className="font-medium text-sm text-center mb-1">متوسط المستوى حسب المادة</p>
+      {data.length === 0 ? (
+        <p className="text-xs text-muted-foreground text-center py-8">لا توجد بيانات</p>
+      ) : (
+        <ResponsiveContainer width="100%" height={220}>
+          <BarChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-20} textAnchor="end" height={50} />
+            <YAxis domain={[0, 4]} tick={{ fontSize: 11 }} />
+            <Tooltip />
+            <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+              {data.map((d, i) => <Cell key={d.name} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      )}
+    </div>
+  );
+}
+
+function tag(label: string, color: string, extra = "") {
+  return `<span class="tag" style="color:${color};border-color:${color};background:${color}1a">${escHtml(label)}${extra}</span>`;
+}
+const escHtml = esc;
+
 function MonthlyReport({ month, setMonth, classId, setClassId, classes, subjects, settings }: any) {
   const monthDate = `${month}-01`;
+  const { start, end } = monthRange(month);
+  const { behaviorLevelFor, behaviorLevels, levelColor } = useSettings();
+  const areaRef = useRef<HTMLDivElement>(null);
+
   const { data: students = [] } = useQuery({
     queryKey: ["students-class-report", classId],
     enabled: !!classId,
@@ -277,6 +336,15 @@ function MonthlyReport({ month, setMonth, classId, setClassId, classes, subjects
       return data ?? [];
     },
   });
+  const { data: violations = [] } = useQuery({
+    queryKey: ["academic-monthly-violations", month, classId, students.length],
+    enabled: !!classId && students.length > 0,
+    queryFn: async () => {
+      const ids = students.map((s: any) => s.id);
+      const { data } = await supabase.from("violations").select("id, student_id").gte("violation_date", start).lte("violation_date", end).in("student_id", ids);
+      return data ?? [];
+    },
+  });
 
   const grid = useMemo(() => {
     const map: Record<string, Record<string, string>> = {};
@@ -287,6 +355,12 @@ function MonthlyReport({ month, setMonth, classId, setClassId, classes, subjects
     return map;
   }, [rows]);
 
+  const vCounts = useMemo(() => {
+    const c: Record<string, number> = {};
+    violations.forEach((v: any) => { c[v.student_id] = (c[v.student_id] ?? 0) + 1; });
+    return c;
+  }, [violations]);
+
   const summary = useMemo(() => {
     const s: Record<string, number> = {};
     ACADEMIC_LEVELS.forEach((l) => { s[l] = 0; });
@@ -294,12 +368,52 @@ function MonthlyReport({ month, setMonth, classId, setClassId, classes, subjects
     return s;
   }, [rows]);
 
+  const behaviorSummary = useMemo(() => {
+    const s: Record<string, number> = {};
+    behaviorLevels.forEach((l) => { s[l.label] = 0; });
+    students.forEach((st: any) => {
+      const b = behaviorLevelFor(vCounts[st.id] ?? 0);
+      if (b) s[b.label] = (s[b.label] ?? 0) + 1;
+    });
+    return s;
+  }, [students, vCounts, behaviorLevels, behaviorLevelFor]);
+
+  const subjectAverages = useMemo(() =>
+    subjects.map((sub: any) => {
+      const list = rows.filter((r: any) => r.subject_id === sub.id).map((r: any) => LEVEL_SCORE[r.level] ?? 0).filter(Boolean);
+      return { name: sub.name, value: list.length ? Number((list.reduce((a: number, b: number) => a + b, 0) / list.length).toFixed(2)) : 0 };
+    }).filter((d: any) => d.value > 0),
+  [subjects, rows]);
+
   const className = classes.find((c: any) => c.id === classId)?.name || "";
 
+  function buildHtml(autoPrint: boolean) {
+    const head = `<tr><th class="name">الطالب</th>${subjects.map((s: any) => `<th>${esc(s.name)}</th>`).join("")}<th>المخالفات</th><th>المستوى السلوكي</th></tr>`;
+    const body = students.map((st: any) => {
+      const count = vCounts[st.id] ?? 0;
+      const b = behaviorLevelFor(count);
+      const cells = subjects.map((s: any) => {
+        const lvl = grid[st.id]?.[s.id];
+        return `<td>${lvl ? tag(lvl, levelColor(lvl)) : "—"}</td>`;
+      }).join("");
+      return `<tr><td class="name">${esc(st.full_name)}</td>${cells}<td>${count}</td><td>${b ? tag(b.label, b.color) : "—"}</td></tr>`;
+    }).join("");
+    return buildAcademicPrintHtml({
+      title: "التقرير الأكاديمي والسلوكي الشهري",
+      schoolName: settings?.school_name,
+      logoUrl: settings?.logo_url,
+      subtitle: `الشهر: ${month}${className ? ` — الصف: ${className}` : ""} — عدد الطلاب: ${students.length}`,
+      columnCount: subjects.length + 3,
+      chartsHtml: captureCharts(areaRef.current),
+      legendHtml: ACADEMIC_LEVELS.map((l) => `<span style="color:${levelColor(l)};border-color:${levelColor(l)}">${l}: ${summary[l] ?? 0}</span>`).join(""),
+      tableHtml: `<table><thead>${head}</thead><tbody>${body || `<tr><td colspan="${subjects.length + 3}">لا توجد بيانات</td></tr>`}</tbody></table>`,
+    }, autoPrint);
+  }
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" ref={areaRef}>
       <Card className="border-0 shadow-card print:hidden">
-        <CardContent className="p-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+        <CardContent className="p-4 grid grid-cols-1 md:grid-cols-4 gap-3">
           <div className="space-y-2"><Label>الشهر</Label><Input type="month" value={month} onChange={(e) => setMonth(e.target.value)} /></div>
           <div className="space-y-2">
             <Label>الصف</Label>
@@ -309,7 +423,14 @@ function MonthlyReport({ month, setMonth, classId, setClassId, classes, subjects
             </Select>
           </div>
           <div className="flex items-end">
-            <Button className="w-full" variant="outline" onClick={() => window.print()}><Printer className="w-4 h-4 ml-2" /> طباعة / حفظ PDF</Button>
+            <Button className="w-full" variant="outline" disabled={!classId} onClick={() => printHtml(buildHtml(true))}>
+              <Printer className="w-4 h-4 ml-2" /> طباعة / حفظ PDF
+            </Button>
+          </div>
+          <div className="flex items-end">
+            <Button className="w-full" variant="outline" disabled={!classId} onClick={() => downloadHtml(buildHtml(false), `التقرير_الأكاديمي_${month}.html`)}>
+              <Download className="w-4 h-4 ml-2" /> تحميل نسخة
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -319,7 +440,7 @@ function MonthlyReport({ month, setMonth, classId, setClassId, classes, subjects
           <div className="text-center border-b pb-3">
             {settings?.logo_url && <img src={settings.logo_url} alt="شعار المدرسة" className="w-16 h-16 mx-auto object-contain mb-2" />}
             <h2 className="text-xl font-bold">{settings?.school_name || ""}</h2>
-            <p className="text-sm text-muted-foreground">التقرير الأكاديمي الشهري — {month} {className && `— ${className}`}</p>
+            <p className="text-sm text-muted-foreground">التقرير الأكاديمي والسلوكي الشهري — {month} {className && `— ${className}`}</p>
           </div>
 
           <div className="flex gap-2 flex-wrap">
@@ -331,31 +452,52 @@ function MonthlyReport({ month, setMonth, classId, setClassId, classes, subjects
           {!classId ? (
             <p className="text-center text-muted-foreground py-8">اختر الصف لعرض التقرير</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm border-collapse">
-                <thead>
-                  <tr className="bg-secondary">
-                    <th className="border p-2 text-right">الطالب</th>
-                    {subjects.map((s: any) => <th key={s.id} className="border p-2">{s.name}</th>)}
-                  </tr>
-                </thead>
-                <tbody>
-                  {students.map((st: any) => (
-                    <tr key={st.id}>
-                      <td className="border p-2 font-medium">{st.full_name}</td>
-                      {subjects.map((s: any) => {
-                        const lvl = grid[st.id]?.[s.id];
-                        return (
-                          <td key={s.id} className="border p-2 text-center">
-                            {lvl ? <span className={`inline-block px-2 py-0.5 rounded border text-xs ${LEVEL_STYLES[lvl] || ""}`}>{lvl}</span> : "—"}
-                          </td>
-                        );
-                      })}
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <LevelPie title="توزيع المستويات الأكاديمية" entries={summary} color={levelColor} />
+                <LevelPie title="توزيع المستويات السلوكية" entries={behaviorSummary} color={levelColor} />
+                <SubjectBars data={subjectAverages} />
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm border-collapse">
+                  <thead>
+                    <tr className="bg-secondary">
+                      <th className="border p-2 text-right">الطالب</th>
+                      {subjects.map((s: any) => <th key={s.id} className="border p-2">{s.name}</th>)}
+                      <th className="border p-2">المخالفات</th>
+                      <th className="border p-2">المستوى السلوكي</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {students.map((st: any) => {
+                      const count = vCounts[st.id] ?? 0;
+                      const b = behaviorLevelFor(count);
+                      return (
+                        <tr key={st.id}>
+                          <td className="border p-2 font-medium">{st.full_name}</td>
+                          {subjects.map((s: any) => {
+                            const lvl = grid[st.id]?.[s.id];
+                            return (
+                              <td key={s.id} className="border p-2 text-center">
+                                {lvl ? <span className={`inline-block px-2 py-0.5 rounded border text-xs ${LEVEL_STYLES[lvl] || ""}`}>{lvl}</span> : "—"}
+                              </td>
+                            );
+                          })}
+                          <td className="border p-2 text-center">{count}</td>
+                          <td className="border p-2 text-center">
+                            {b ? (
+                              <span className="inline-block px-2 py-0.5 rounded border text-xs font-medium"
+                                style={{ color: b.color, borderColor: b.color, backgroundColor: `${b.color}1a` }}>{b.label}</span>
+                            ) : "—"}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
@@ -367,6 +509,7 @@ function CombinedReport({ month, setMonth, classId, setClassId, classes, subject
   const monthDate = `${month}-01`;
   const { start, end } = monthRange(month);
   const { academicLevelFor, behaviorLevelFor, behaviorLevels, levelColor } = useSettings();
+  const areaRef = useRef<HTMLDivElement>(null);
 
   const { data: students = [] } = useQuery({
     queryKey: ["students-class-combined", classId],
@@ -412,6 +555,7 @@ function CombinedReport({ month, setMonth, classId, setClassId, classes, subject
 
   const academicSummary = useMemo(() => {
     const s: Record<string, number> = {};
+    ACADEMIC_LEVELS.forEach((l) => { s[l] = 0; });
     perStudent.forEach((r) => { if (r.overall) s[r.overall] = (s[r.overall] ?? 0) + 1; });
     return s;
   }, [perStudent]);
@@ -423,13 +567,48 @@ function CombinedReport({ month, setMonth, classId, setClassId, classes, subject
     return s;
   }, [perStudent, behaviorLevels]);
 
+  const subjectAverages = useMemo(() =>
+    subjects.map((sub: any) => {
+      const list = academic.filter((r: any) => r.subject_id === sub.id).map((r: any) => LEVEL_SCORE[r.level] ?? 0).filter(Boolean);
+      return { name: sub.name, value: list.length ? Number((list.reduce((a: number, b: number) => a + b, 0) / list.length).toFixed(2)) : 0 };
+    }).filter((d: any) => d.value > 0),
+  [subjects, academic]);
+
   const className = classes.find((c: any) => c.id === classId)?.name || "";
-  const total = perStudent.length || 1;
+
+  function buildHtml(autoPrint: boolean) {
+    const head = `<tr><th class="name">الطالب</th>${subjects.map((s: any) => `<th>${esc(s.name)}</th>`).join("")}<th>المعدل</th><th>المستوى الأكاديمي</th><th>المخالفات</th><th>المستوى السلوكي</th></tr>`;
+    const body = perStudent.map((r) => {
+      const cells = subjects.map((s: any) => {
+        const cell = r.bySubject[s.id];
+        return `<td>${cell ? tag(cell.level, levelColor(cell.level), cell.score !== null ? ` (${cell.score})` : "") : "—"}</td>`;
+      }).join("");
+      return `<tr><td class="name">${esc(r.student.full_name)}</td>${cells}` +
+        `<td>${r.avg !== null ? r.avg.toFixed(1) : "—"}</td>` +
+        `<td>${r.overall ? tag(r.overall, levelColor(r.overall)) : "—"}</td>` +
+        `<td>${r.vCount}</td>` +
+        `<td>${r.behavior ? tag(r.behavior.label, r.behavior.color) : "—"}</td></tr>`;
+    }).join("");
+    const cols = subjects.length + 5;
+    return buildAcademicPrintHtml({
+      title: "التقرير الشهري الموحّد (أكاديمي وسلوكي)",
+      schoolName: settings?.school_name,
+      logoUrl: settings?.logo_url,
+      subtitle: `الشهر: ${month}${className ? ` — الصف: ${className}` : ""} — عدد الطلاب: ${perStudent.length}`,
+      columnCount: cols,
+      chartsHtml: captureCharts(areaRef.current),
+      legendHtml: [
+        ...Object.entries(academicSummary).map(([l, v]) => `<span style="color:${levelColor(l)};border-color:${levelColor(l)}">أكاديمي ${esc(l)}: ${v}</span>`),
+        ...Object.entries(behaviorSummary).map(([l, v]) => `<span style="color:${levelColor(l)};border-color:${levelColor(l)}">سلوكي ${esc(l)}: ${v}</span>`),
+      ].join(""),
+      tableHtml: `<table><thead>${head}</thead><tbody>${body || `<tr><td colspan="${cols}">لا توجد بيانات</td></tr>`}</tbody></table>`,
+    }, autoPrint);
+  }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" ref={areaRef}>
       <Card className="border-0 shadow-card print:hidden">
-        <CardContent className="p-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+        <CardContent className="p-4 grid grid-cols-1 md:grid-cols-4 gap-3">
           <div className="space-y-2"><Label>الشهر</Label><Input type="month" value={month} onChange={(e) => setMonth(e.target.value)} /></div>
           <div className="space-y-2">
             <Label>الصف</Label>
@@ -439,7 +618,14 @@ function CombinedReport({ month, setMonth, classId, setClassId, classes, subject
             </Select>
           </div>
           <div className="flex items-end">
-            <Button className="w-full" variant="outline" onClick={() => window.print()}><Printer className="w-4 h-4 ml-2" /> طباعة / حفظ PDF</Button>
+            <Button className="w-full" variant="outline" disabled={!classId} onClick={() => printHtml(buildHtml(true))}>
+              <Printer className="w-4 h-4 ml-2" /> طباعة / حفظ PDF
+            </Button>
+          </div>
+          <div className="flex items-end">
+            <Button className="w-full" variant="outline" disabled={!classId} onClick={() => downloadHtml(buildHtml(false), `التقرير_الموحد_${month}.html`)}>
+              <Download className="w-4 h-4 ml-2" /> تحميل نسخة
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -458,9 +644,10 @@ function CombinedReport({ month, setMonth, classId, setClassId, classes, subject
             <Loader2 className="w-5 h-5 animate-spin mx-auto" />
           ) : (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <BarSummary title="التوزيع الأكاديمي" entries={academicSummary} total={total} color={levelColor} />
-                <BarSummary title="التوزيع السلوكي" entries={behaviorSummary} total={total} color={levelColor} />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <LevelPie title="التوزيع الأكاديمي" entries={academicSummary} color={levelColor} />
+                <LevelPie title="التوزيع السلوكي" entries={behaviorSummary} color={levelColor} />
+                <SubjectBars data={subjectAverages} />
               </div>
 
               <div className="overflow-x-auto">
@@ -513,26 +700,6 @@ function CombinedReport({ month, setMonth, classId, setClassId, classes, subject
           )}
         </CardContent>
       </Card>
-    </div>
-  );
-}
-
-function BarSummary({ title, entries, total, color }: { title: string; entries: Record<string, number>; total: number; color: (l: string) => string }) {
-  return (
-    <div className="border rounded-lg p-3 space-y-2">
-      <p className="font-medium text-sm">{title}</p>
-      {Object.entries(entries).map(([label, count]) => (
-        <div key={label} className="space-y-1">
-          <div className="flex justify-between text-xs">
-            <span>{label}</span>
-            <span className="text-muted-foreground">{count} طالب</span>
-          </div>
-          <div className="h-2 rounded bg-secondary overflow-hidden">
-            <div className="h-full rounded" style={{ width: `${(count / total) * 100}%`, backgroundColor: color(label) }} />
-          </div>
-        </div>
-      ))}
-      {Object.keys(entries).length === 0 && <p className="text-xs text-muted-foreground">لا توجد بيانات</p>}
     </div>
   );
 }
