@@ -156,6 +156,22 @@ function AcademicPage() {
     if (derived) setLevels((prev) => ({ ...prev, [studentId]: derived }));
   };
 
+  const applyImportedScores = (list: { studentId: string; score: number }[]) => {
+    setScores((prev) => {
+      const next = { ...prev };
+      list.forEach((i) => { next[i.studentId] = String(i.score); });
+      return next;
+    });
+    setLevels((prev) => {
+      const next = { ...prev };
+      list.forEach((i) => {
+        const derived = academicLevelFor(i.score);
+        if (derived) next[i.studentId] = derived;
+      });
+      return next;
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-3 flex-wrap print:hidden">
