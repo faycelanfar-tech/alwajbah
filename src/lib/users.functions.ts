@@ -20,6 +20,29 @@ async function assertAdmin(context: { supabase: any; userId: string }) {
   if (!roleRow) throw new Error("صلاحية المشرف العام مطلوبة");
 }
 
+/** يسجّل عملية على الحسابات في سجل تتبع العمليات */
+async function logAccountActivity(
+  a: ReturnType<typeof admin>,
+  actorId: string,
+  action: "created" | "deleted",
+  targetId: string,
+  summary: string,
+) {
+  const [{ data: prof }, { data: roleRow }] = await Promise.all([
+    a.from("profiles").select("username, full_name").eq("id", actorId).maybeSingle(),
+    a.from("user_roles").select("role").eq("user_id", actorId).maybeSingle(),
+  ]);
+  await a.from("activity_log").insert({
+    actor_id: actorId,
+    actor_name: (prof as any)?.full_name || (prof as any)?.username || null,
+    actor_role: (roleRow as any)?.role ?? null,
+    action,
+    entity: "profiles",
+    entity_id: targetId,
+    summary,
+  });
+}
+
 function friendlyAuthError(msg: string): string {
   const m = msg.toLowerCase();
   if (m.includes("already") || m.includes("registered") || m.includes("exists") || m.includes("duplicate"))
