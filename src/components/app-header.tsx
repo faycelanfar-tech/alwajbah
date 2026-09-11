@@ -5,6 +5,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { ChangePasswordDialog } from "@/components/change-password-dialog";
 import { GlobalSearch } from "@/components/global-search";
 import { ROLE_LABELS } from "@/components/app-sidebar";
+import { SITE_OWNER_LABEL } from "@/lib/branding";
 import { useAuth } from "@/hooks/use-auth";
 
 export function AppHeader() {
