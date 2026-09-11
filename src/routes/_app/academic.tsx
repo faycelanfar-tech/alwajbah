@@ -200,6 +200,7 @@ function AcademicPage() {
                 <CardTitle>الطلاب ({students.length})</CardTitle>
                 {!readOnly && (
                   <div className="flex gap-2 flex-wrap">
+                    <PasteScoresDialog students={students} onApply={applyImportedScores} />
                     <span className="text-sm text-muted-foreground self-center">تعيين الكل:</span>
                     {ACADEMIC_LEVELS.map((l) => (
                       <Button key={l} size="sm" variant="outline" onClick={() => setAll(l)}>{l}</Button>
