@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useSettings } from "@/hooks/use-settings";
@@ -11,9 +11,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ACADEMIC_LEVELS, LEVEL_STYLES, isReadOnlyRole } from "@/lib/branding";
+import { ACADEMIC_LEVELS, LEVEL_STYLES, CHART_COLORS, isReadOnlyRole } from "@/lib/branding";
+import { buildAcademicPrintHtml, captureCharts, downloadHtml, printHtml, esc } from "@/lib/academic-print";
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { toast } from "sonner";
-import { Printer, Save, Loader2 } from "lucide-react";
+import { Printer, Save, Loader2, Download } from "lucide-react";
 
 export const Route = createFileRoute("/_app/academic")({
   component: AcademicPage,
