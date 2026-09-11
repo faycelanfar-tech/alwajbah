@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { APP_PAGES } from "@/lib/pages";
-import { ROLE_LABELS } from "@/lib/branding";
+import { ROLE_LABELS, PROTECTED_USERNAME } from "@/lib/branding";
 import { toast } from "sonner";
 import { RotateCcw } from "lucide-react";
 
@@ -30,7 +30,9 @@ export function PagePermissionsCard() {
         supabase.from("user_roles").select("user_id, role"),
       ]);
       const map = new Map((roles ?? []).map((r: any) => [r.user_id, r.role]));
-      return (profs ?? []).map((p: any) => ({ ...p, role: map.get(p.id) as string | undefined }));
+      return (profs ?? [])
+        .filter((p: any) => p.username !== PROTECTED_USERNAME)
+        .map((p: any) => ({ ...p, role: map.get(p.id) as string | undefined }));
     },
   });
 
