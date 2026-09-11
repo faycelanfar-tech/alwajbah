@@ -529,6 +529,7 @@ function CombinedReport({ month, setMonth, classId, setClassId, classes, subject
   const { start, end } = monthRange(month);
   const { academicLevelFor, behaviorLevelFor, behaviorLevels, levelColor } = useSettings();
   const areaRef = useRef<HTMLDivElement>(null);
+  const [showScoresInPrint, setShowScoresInPrint] = useState(false);
 
   const { data: students = [] } = useQuery({
     queryKey: ["students-class-combined", classId],
