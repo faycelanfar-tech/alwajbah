@@ -648,6 +648,10 @@ function CombinedReport({ month, setMonth, classId, setClassId, classes, subject
               <Download className="w-4 h-4 ml-2" /> تحميل نسخة
             </Button>
           </div>
+          <label className="md:col-span-4 flex items-center gap-2 text-sm cursor-pointer">
+            <Checkbox checked={showScoresInPrint} onCheckedChange={(v) => setShowScoresInPrint(!!v)} />
+            إظهار الدرجات في الطباعة (غير مفعّل افتراضياً)
+          </label>
         </CardContent>
       </Card>
 
