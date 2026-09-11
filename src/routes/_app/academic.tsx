@@ -601,7 +601,8 @@ function CombinedReport({ month, setMonth, classId, setClassId, classes, subject
     const body = perStudent.map((r) => {
       const cells = subjects.map((s: any) => {
         const cell = r.bySubject[s.id];
-        return `<td>${cell ? tag(cell.level, levelColor(cell.level), cell.score !== null ? ` (${cell.score})` : "") : "—"}</td>`;
+        const extra = showScoresInPrint && cell?.score !== null && cell?.score !== undefined ? ` (${cell.score})` : "";
+        return `<td>${cell ? tag(cell.level, levelColor(cell.level), extra) : "—"}</td>`;
       }).join("");
       return `<tr><td class="name">${esc(r.student.full_name)}</td>${cells}` +
         `<td>${r.avg !== null ? r.avg.toFixed(1) : "—"}</td>` +
