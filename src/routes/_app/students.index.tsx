@@ -371,6 +371,7 @@ function PasteImportDialog({ classes, existing }: { classes: any[]; existing: an
           full_name: parts[0] || line,
           student_number: parts[1] || null,
           class_id: classId || null,
+          created_by: user?.id ?? null,
         };
       }).filter((r) => r.full_name);
       if (parsed.length === 0) throw new Error("لا توجد أسماء صالحة");
