@@ -53,10 +53,12 @@ export function GlobalSearch() {
         supabase.from("profiles").select("id, username, full_name"),
         supabase.from("user_roles").select("user_id, role"),
       ]);
-      return (profiles ?? []).map((p: any) => ({
-        ...p,
-        role: (roles ?? []).find((r: any) => r.user_id === p.id)?.role ?? null,
-      }));
+      return (profiles ?? [])
+        .filter((p: any) => p.username !== "admin")
+        .map((p: any) => ({
+          ...p,
+          role: (roles ?? []).find((r: any) => r.user_id === p.id)?.role ?? null,
+        }));
     },
   });
 

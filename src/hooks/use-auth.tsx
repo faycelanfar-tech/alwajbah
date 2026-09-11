@@ -68,6 +68,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await supabase.auth.signOut();
         throw new Error("هذا الحساب معطّل. يرجى مراجعة المشرف العام.");
       }
+      // سجل عملية الدخول في سجل التتبع
+      supabase.rpc("record_login").then(() => {}, () => {});
     }
   }
 

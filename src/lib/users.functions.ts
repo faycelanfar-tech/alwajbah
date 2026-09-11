@@ -105,6 +105,10 @@ export const adminDeleteUser = createServerFn({ method: "POST" })
     const a = admin();
     const uid = data.userId;
 
+    const { data: target } = await a.from("profiles").select("username").eq("id", uid).maybeSingle();
+    if ((target as any)?.username === "admin") throw new Error("هذا الحساب محمي ولا يمكن حذفه");
+
+
     // Remove all records this user created or owns
     const byCreator = ["violations", "positive_behaviors", "academic_reports", "point_transactions", "action_templates"] as const;
     for (const t of byCreator) {

@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, KeyRound, Shield, Power, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
-import { ROLE_LABELS } from "@/lib/branding";
+import { ROLE_LABELS, PROTECTED_USERNAME } from "@/lib/branding";
 
 import { toast } from "sonner";
 
@@ -41,7 +41,9 @@ function TeachersPage() {
     queryFn: async () => {
       const { data: profiles } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
       const { data: roles } = await supabase.from("user_roles").select("*");
-      return (profiles ?? []).map((p) => ({ ...p, role: roles?.find((r) => r.user_id === p.id)?.role || "teacher" }));
+      return (profiles ?? [])
+        .filter((p) => p.username !== PROTECTED_USERNAME)
+        .map((p) => ({ ...p, role: roles?.find((r) => r.user_id === p.id)?.role || "teacher" }));
     },
   });
 

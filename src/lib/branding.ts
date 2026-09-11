@@ -1,5 +1,8 @@
 export const DEVELOPER_CREDIT = "تطوير: ابوجهاد";
 
+/** حساب مسؤول الموقع: محمي، لا يُحذف ولا يُعطّل ولا يظهر في قوائم الحسابات */
+export const PROTECTED_USERNAME = "admin";
+
 export const ACTION_OPTIONS = [
   "تنبيه شفهي",
   "تعهد كتابي",

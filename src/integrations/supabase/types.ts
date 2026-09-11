@@ -122,6 +122,45 @@ export type Database = {
         }
         Relationships: []
       }
+      activity_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          actor_name: string | null
+          actor_role: string | null
+          created_at: string
+          details: Json | null
+          entity: string
+          entity_id: string | null
+          id: string
+          summary: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          actor_name?: string | null
+          actor_role?: string | null
+          created_at?: string
+          details?: Json | null
+          entity: string
+          entity_id?: string | null
+          id?: string
+          summary?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          actor_name?: string | null
+          actor_role?: string | null
+          created_at?: string
+          details?: Json | null
+          entity?: string
+          entity_id?: string | null
+          id?: string
+          summary?: string | null
+        }
+        Relationships: []
+      }
       app_settings: {
         Row: {
           footer_text: string | null
@@ -461,6 +500,7 @@ export type Database = {
           full_name: string | null
           id: string
           is_active: boolean
+          last_login_at: string | null
           must_change_password: boolean
           username: string
         }
@@ -470,6 +510,7 @@ export type Database = {
           full_name?: string | null
           id: string
           is_active?: boolean
+          last_login_at?: string | null
           must_change_password?: boolean
           username: string
         }
@@ -479,6 +520,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_active?: boolean
+          last_login_at?: string | null
           must_change_password?: boolean
           username?: string
         }
@@ -795,6 +837,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      record_login: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role:

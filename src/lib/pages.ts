@@ -25,7 +25,7 @@ export const APP_PAGES: AppPage[] = [
   { key: "classes", to: "/classes", label: "الفصول", icon: Users, roles: ["admin"] },
   { key: "teachers", to: "/teachers", label: "المعلمون والحسابات", icon: UserCog, roles: ["admin"] },
   { key: "reports", to: "/reports", label: "التقارير", icon: FileBarChart, roles: VIEWERS },
-  { key: "audit", to: "/audit", label: "سجل النشاط", icon: History, roles: ["admin"] },
+  { key: "audit", to: "/audit", label: "تتبع العمليات", icon: History, roles: ["admin"] },
   { key: "settings", to: "/settings", label: "الإعدادات", icon: SettingsIcon, roles: ["admin"], locked: true },
 ];
 
