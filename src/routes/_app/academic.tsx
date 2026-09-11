@@ -14,6 +14,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ACADEMIC_LEVELS, LEVEL_STYLES, CHART_COLORS, isReadOnlyRole } from "@/lib/branding";
 import { buildAcademicPrintHtml, captureCharts, downloadHtml, printHtml, esc } from "@/lib/academic-print";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { PasteScoresDialog } from "@/components/paste-scores-dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { Printer, Save, Loader2, Download } from "lucide-react";
 
@@ -156,6 +158,22 @@ function AcademicPage() {
     if (derived) setLevels((prev) => ({ ...prev, [studentId]: derived }));
   };
 
+  const applyImportedScores = (list: { studentId: string; score: number }[]) => {
+    setScores((prev) => {
+      const next = { ...prev };
+      list.forEach((i) => { next[i.studentId] = String(i.score); });
+      return next;
+    });
+    setLevels((prev) => {
+      const next = { ...prev };
+      list.forEach((i) => {
+        const derived = academicLevelFor(i.score);
+        if (derived) next[i.studentId] = derived;
+      });
+      return next;
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-3 flex-wrap print:hidden">
@@ -200,6 +218,7 @@ function AcademicPage() {
                 <CardTitle>الطلاب ({students.length})</CardTitle>
                 {!readOnly && (
                   <div className="flex gap-2 flex-wrap">
+                    <PasteScoresDialog students={students} onApply={applyImportedScores} />
                     <span className="text-sm text-muted-foreground self-center">تعيين الكل:</span>
                     {ACADEMIC_LEVELS.map((l) => (
                       <Button key={l} size="sm" variant="outline" onClick={() => setAll(l)}>{l}</Button>
@@ -510,6 +529,7 @@ function CombinedReport({ month, setMonth, classId, setClassId, classes, subject
   const { start, end } = monthRange(month);
   const { academicLevelFor, behaviorLevelFor, behaviorLevels, levelColor } = useSettings();
   const areaRef = useRef<HTMLDivElement>(null);
+  const [showScoresInPrint, setShowScoresInPrint] = useState(false);
 
   const { data: students = [] } = useQuery({
     queryKey: ["students-class-combined", classId],
@@ -581,7 +601,8 @@ function CombinedReport({ month, setMonth, classId, setClassId, classes, subject
     const body = perStudent.map((r) => {
       const cells = subjects.map((s: any) => {
         const cell = r.bySubject[s.id];
-        return `<td>${cell ? tag(cell.level, levelColor(cell.level), cell.score !== null ? ` (${cell.score})` : "") : "—"}</td>`;
+        const extra = showScoresInPrint && cell?.score !== null && cell?.score !== undefined ? ` (${cell.score})` : "";
+        return `<td>${cell ? tag(cell.level, levelColor(cell.level), extra) : "—"}</td>`;
       }).join("");
       return `<tr><td class="name">${esc(r.student.full_name)}</td>${cells}` +
         `<td>${r.avg !== null ? r.avg.toFixed(1) : "—"}</td>` +
@@ -627,6 +648,10 @@ function CombinedReport({ month, setMonth, classId, setClassId, classes, subject
               <Download className="w-4 h-4 ml-2" /> تحميل نسخة
             </Button>
           </div>
+          <label className="md:col-span-4 flex items-center gap-2 text-sm cursor-pointer">
+            <Checkbox checked={showScoresInPrint} onCheckedChange={(v) => setShowScoresInPrint(!!v)} />
+            إظهار الدرجات في الطباعة (غير مفعّل افتراضياً)
+          </label>
         </CardContent>
       </Card>
 
