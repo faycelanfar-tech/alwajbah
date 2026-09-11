@@ -22,6 +22,7 @@ export type Database = {
           level: string
           month: string
           note: string | null
+          score: number | null
           student_id: string
           subject_id: string
           updated_at: string
@@ -33,6 +34,7 @@ export type Database = {
           level: string
           month: string
           note?: string | null
+          score?: number | null
           student_id: string
           subject_id: string
           updated_at?: string
@@ -44,6 +46,7 @@ export type Database = {
           level?: string
           month?: string
           note?: string | null
+          score?: number | null
           student_id?: string
           subject_id?: string
           updated_at?: string
@@ -145,6 +148,39 @@ export type Database = {
           primary_color?: string | null
           school_name?: string
           subtitle?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      behavior_levels: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          label: string
+          max_violations: number | null
+          min_violations: number
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          label: string
+          max_violations?: number | null
+          min_violations?: number
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          label?: string
+          max_violations?: number | null
+          min_violations?: number
+          sort_order?: number
           updated_at?: string
         }
         Relationships: []
