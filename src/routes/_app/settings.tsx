@@ -99,6 +99,8 @@ function SettingsPage() {
 
       <GradingCard />
 
+      <BehaviorLevelsCard />
+
       <PagePermissionsCard />
     </div>
 
