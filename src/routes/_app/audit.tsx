@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { History, Search, LogIn, Lock } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { ROLE_LABELS } from "@/lib/branding";
+import { ROLE_LABELS, PROTECTED_USERNAME } from "@/lib/branding";
 
 export const Route = createFileRoute("/_app/audit")({ component: AuditPage });
 
@@ -32,6 +32,7 @@ const ENTITY_LABELS: Record<string, string> = {
   app_settings: "الإعدادات",
   action_templates: "الإجراءات المحفوظة",
   subjects: "المواد",
+  profiles: "الحسابات",
   auth: "الدخول",
 };
 
