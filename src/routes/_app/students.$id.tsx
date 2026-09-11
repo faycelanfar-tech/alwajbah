@@ -73,6 +73,24 @@ function StudentProfile() {
       .filter((d) => d.value > 0);
   }, [violations]);
 
+  const behaviorMonths = useMemo(() => {
+    const counts: Record<string, number> = {};
+    violations.forEach((v: any) => {
+      const key = String(v.violation_date).slice(0, 7);
+      counts[key] = (counts[key] ?? 0) + 1;
+    });
+    const months: string[] = [];
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+    }
+    return months.map((m) => {
+      const count = counts[m] ?? 0;
+      return { month: m, count, level: behaviorLevelFor(count) };
+    });
+  }, [violations, behaviorLevelFor]);
+
   const { data: academic = [] } = useQuery({
     queryKey: ["student-academic", id],
     queryFn: async () =>
