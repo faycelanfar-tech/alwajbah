@@ -3,6 +3,11 @@ export const DEVELOPER_CREDIT = "تطوير: ابوجهاد";
 /** حساب مسؤول الموقع: محمي، لا يُحذف ولا يُعطّل ولا يظهر في قوائم الحسابات */
 export const PROTECTED_USERNAME = "admin";
 
+/** التسمية الخاصة بحساب مسؤول الموقع */
+export const SITE_OWNER_LABEL = "مسؤول الموقع";
+
+export const isSiteOwnerUsername = (username?: string | null) => username === PROTECTED_USERNAME;
+
 export const ACTION_OPTIONS = [
   "تنبيه شفهي",
   "تعهد كتابي",

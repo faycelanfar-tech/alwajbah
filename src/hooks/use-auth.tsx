@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Session, User } from "@supabase/supabase-js";
 
 import type { AppRole } from "@/lib/branding";
+import { isSiteOwnerUsername } from "@/lib/branding";
 
 type Role = AppRole;
 
@@ -11,6 +12,8 @@ interface AuthCtx {
   session: Session | null;
   role: Role | null;
   profile: { username: string; full_name: string | null } | null;
+  /** حساب مسؤول الموقع (admin) — صلاحيات كاملة ومخفي عن الجميع */
+  isOwner: boolean;
   loading: boolean;
   signIn: (username: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -78,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <Ctx.Provider value={{ user, session, role, profile, loading, signIn, signOut }}>
+    <Ctx.Provider value={{ user, session, role, profile, isOwner: isSiteOwnerUsername(profile?.username), loading, signIn, signOut }}>
       {children}
     </Ctx.Provider>
   );
