@@ -39,7 +39,7 @@ const ENTITY_LABELS: Record<string, string> = {
 const PERIODS: Record<string, number> = { "7": 7, "30": 30, "90": 90 };
 
 function AuditPage() {
-  const { role } = useAuth();
+  const { role, isOwner } = useAuth();
   const [search, setSearch] = useState("");
   const [entity, setEntity] = useState("all");
   const [action, setAction] = useState("all");
@@ -70,6 +70,7 @@ function AuditPage() {
         supabase.from("user_roles").select("user_id, role"),
       ]);
       return (profiles ?? [])
+        .filter((p: any) => isOwner || p.username !== PROTECTED_USERNAME)
         .map((p: any) => ({ ...p, role: (roles ?? []).find((r: any) => r.user_id === p.id)?.role ?? null }))
         .sort((a: any, b: any) => (b.last_login_at ?? "").localeCompare(a.last_login_at ?? ""));
     },
