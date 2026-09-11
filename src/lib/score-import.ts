@@ -147,7 +147,7 @@ export function matchScores(
 export async function readScoreFile(file: File): Promise<string> {
   const name = file.name.toLowerCase();
   if (name.endsWith(".docx")) {
-    const mammoth = await import("mammoth/mammoth.browser");
+    const mammoth = await import("mammoth");
     const buf = await file.arrayBuffer();
     const res = await (mammoth as any).extractRawText({ arrayBuffer: buf });
     return String(res?.value ?? "");
