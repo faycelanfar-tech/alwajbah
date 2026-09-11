@@ -323,6 +323,26 @@ function StudentProfile() {
       )}
 
 
+      <Card className="border-0 shadow-card">
+        <CardHeader><CardTitle>المستوى السلوكي الشهري</CardTitle></CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+            {behaviorMonths.map((m) => (
+              <div key={m.month} className="border rounded-lg p-2 text-center space-y-1">
+                <p className="text-xs text-muted-foreground">{m.month}</p>
+                <p className="text-lg font-bold">{m.count}</p>
+                {m.level && (
+                  <span
+                    className="inline-block px-2 py-0.5 rounded border text-xs font-medium"
+                    style={{ color: m.level.color, borderColor: m.level.color, backgroundColor: `${m.level.color}1a` }}
+                  >{m.level.label}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
       <AcademicJourney studentId={id} />
 
       <Card className="border-0 shadow-card">
