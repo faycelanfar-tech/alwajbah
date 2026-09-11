@@ -16,7 +16,7 @@ import { PagePermissionsCard } from "@/components/page-permissions-card";
 export const Route = createFileRoute("/_app/settings")({ component: SettingsPage });
 
 function SettingsPage() {
-  const { role } = useAuth();
+  const { role, isOwner } = useAuth();
   const { settings, refresh } = useSettings();
   const navigate = useNavigate();
   const [form, setForm] = useState(settings);
@@ -62,6 +62,7 @@ function SettingsPage() {
         <p className="text-muted-foreground mt-1">تخصيص النظام</p>
       </div>
 
+      {isOwner && (
       <Card className="border-0 shadow-card">
         <CardHeader><CardTitle>هوية المدرسة</CardTitle></CardHeader>
         <CardContent className="space-y-4">
@@ -92,6 +93,7 @@ function SettingsPage() {
           </Button>
         </CardContent>
       </Card>
+      )}
 
       <SubjectsCard />
 
@@ -101,7 +103,7 @@ function SettingsPage() {
 
       <BehaviorLevelsCard />
 
-      <PagePermissionsCard />
+      {isOwner && <PagePermissionsCard />}
     </div>
 
   );
