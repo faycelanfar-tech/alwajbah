@@ -264,12 +264,14 @@ function AddStudentDialog({ classes }: { classes: any[] }) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ full_name: "", student_number: "", class_id: "" });
   const qc = useQueryClient();
+  const { user } = useAuth();
   const add = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.from("students").insert({
         full_name: form.full_name,
         student_number: form.student_number || null,
         class_id: form.class_id || null,
+        created_by: user?.id ?? null,
       });
       if (error) throw error;
     },
@@ -359,6 +361,7 @@ function PasteImportDialog({ classes, existing }: { classes: any[]; existing: an
   const [text, setText] = useState("");
   const [classId, setClassId] = useState("");
   const qc = useQueryClient();
+  const { user } = useAuth();
   const importMut = useMutation({
     mutationFn: async () => {
       const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
