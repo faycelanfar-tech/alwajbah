@@ -50,7 +50,7 @@ export function GlobalSearch() {
     enabled: open && isVisible("teachers"),
     queryFn: async () => {
       const [{ data: profiles }, { data: roles }] = await Promise.all([
-        supabase.from("profiles").select("id, username, full_name"),
+        supabase.from("profiles_public").select("id, username, full_name"),
         supabase.from("user_roles").select("user_id, role"),
       ]);
       return (profiles ?? [])

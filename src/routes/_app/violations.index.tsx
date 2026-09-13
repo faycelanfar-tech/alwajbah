@@ -66,15 +66,20 @@ function ViolationsPage() {
 
   const { data: violations = [] } = useQuery({
     queryKey: ["violations"],
-    queryFn: async () =>
-      (
-        await supabase
-          .from("violations")
-          .select(
-            "*, students(full_name, classes(name)), violation_types(name, severity), profiles!violations_created_by_fkey(full_name, username)"
-          )
-          .order("created_at", { ascending: false })
-      ).data ?? [],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("violations")
+        .select("*, students(full_name, classes(name)), violation_types(name, severity)")
+        .order("created_at", { ascending: false });
+      const list = data ?? [];
+      const ids = Array.from(new Set(list.map((v: any) => v.created_by).filter(Boolean)));
+      if (ids.length) {
+        const { data: profs } = await supabase.from("profiles_public").select("id, full_name, username").in("id", ids);
+        const map = new Map((profs ?? []).map((p: any) => [p.id, p]));
+        list.forEach((v: any) => { v.profiles = map.get(v.created_by) ?? null; });
+      }
+      return list;
+    },
   });
 
   const { data: classes = [] } = useQuery({
