@@ -140,7 +140,7 @@ function ReportsPage() {
       let list = data ?? [];
       const ids = Array.from(new Set(list.map((v: any) => v.created_by).filter(Boolean)));
       if (ids.length) {
-        const { data: profs } = await supabase.from("profiles").select("id, full_name, username").in("id", ids);
+        const { data: profs } = await supabase.from("profiles_public").select("id, full_name, username").in("id", ids);
         const map = new Map((profs ?? []).map((p: any) => [p.id, p]));
         list.forEach((v: any) => { v.profiles = map.get(v.created_by) ?? null; });
       }
