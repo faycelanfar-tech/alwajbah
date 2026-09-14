@@ -154,13 +154,17 @@ function Dashboard() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <ChartCard title="أكثر المخالفات تكراراً">
               {byType.length === 0 ? <NoData /> : (
-                <ResponsiveContainer width="100%" height={280}>
+                <ResponsiveContainer width="100%" height={Math.max(280, byType.length * 38)}>
                   <BarChart data={byType} layout="vertical" margin={{ right: 12, left: 12 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis type="number" allowDecimals={false} stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                    <YAxis type="category" dataKey="name" width={120} stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                    <YAxis type="category" dataKey="name" width={130} interval={0} stroke="hsl(var(--muted-foreground))" fontSize={11} />
                     <Tooltip contentStyle={tooltipStyle} />
-                    <Bar dataKey="value" name="عدد المخالفات" fill="hsl(var(--primary))" radius={[0, 6, 6, 0]} />
+                    <Bar dataKey="value" name="عدد المخالفات" radius={[0, 6, 6, 0]}>
+                      {byType.map((_, i) => (
+                        <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                      ))}
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               )}
@@ -168,13 +172,17 @@ function Dashboard() {
 
             <ChartCard title="الفصول الأكثر تسجيلاً للمخالفات">
               {byClass.length === 0 ? <NoData /> : (
-                <ResponsiveContainer width="100%" height={280}>
-                  <BarChart data={byClass} margin={{ right: 12, left: 12 }}>
+                <ResponsiveContainer width="100%" height={Math.max(280, byClass.length * 32)}>
+                  <BarChart data={byClass} layout="vertical" margin={{ right: 12, left: 12 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                    <YAxis allowDecimals={false} stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                    <XAxis type="number" allowDecimals={false} stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                    <YAxis type="category" dataKey="name" width={110} interval={0} stroke="hsl(var(--muted-foreground))" fontSize={11} />
                     <Tooltip contentStyle={tooltipStyle} />
-                    <Bar dataKey="value" name="عدد المخالفات" fill="hsl(var(--chart-2, var(--primary)))" radius={[6, 6, 0, 0]} />
+                    <Bar dataKey="value" name="عدد المخالفات" radius={[0, 6, 6, 0]}>
+                      {byClass.map((_, i) => (
+                        <Cell key={i} fill={CHART_COLORS[(i + 2) % CHART_COLORS.length]} />
+                      ))}
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               )}
