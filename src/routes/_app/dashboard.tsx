@@ -71,6 +71,15 @@ function Dashboard() {
     },
   });
 
+  const { data: allClasses = [] } = useQuery({
+    queryKey: ["all-class-names"],
+    enabled: !isTeacher,
+    queryFn: async () => {
+      const { data } = await supabase.from("classes").select("name").order("name");
+      return (data ?? []).map((c: any) => c.name as string);
+    },
+  });
+
   const { data: myViolations = [] } = useQuery({
     queryKey: ["my-violations", user?.id],
     enabled: isTeacher && !!user?.id,
@@ -86,7 +95,12 @@ function Dashboard() {
   });
 
   const byType = countBy(chartRows.map((v: any) => v.violation_types?.name || "غير محدد")).slice(0, 8);
-  const byClass = countBy(chartRows.map((v: any) => v.students?.classes?.name || "بدون فصل")).slice(0, 8);
+  const counted = countBy(chartRows.map((v: any) => v.students?.classes?.name || "بدون فصل"));
+  const countedMap = new Map(counted.map((c) => [c.name, c.value]));
+  const byClass = [
+    ...allClasses.map((name) => ({ name, value: countedMap.get(name) ?? 0 })),
+    ...counted.filter((c) => !allClasses.includes(c.name)),
+  ].sort((a, b) => b.value - a.value);
   const byDate = Object.entries(
     chartRows.reduce((acc: Record<string, number>, v: any) => {
       acc[v.violation_date] = (acc[v.violation_date] || 0) + 1;
