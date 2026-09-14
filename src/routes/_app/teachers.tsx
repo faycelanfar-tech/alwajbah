@@ -325,7 +325,7 @@ function TeachersPage() {
 }
 
 function AssignDialog({ user, onClose, subjects, classes, currentSubjects, currentClasses }: {
-  user: { id: string; name: string };
+  user: { id: string; name: string; role?: string };
   onClose: () => void;
   subjects: any[];
   classes: any[];
