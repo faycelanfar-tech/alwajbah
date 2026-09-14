@@ -45,7 +45,7 @@ function ActionsPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("violations")
-        .select("*, students(full_name, classes(name)), violation_types(name, severity)")
+        .select("*, students(full_name, class_id, classes(name)), violation_types(name, severity)")
         .order("created_at", { ascending: false });
       const list = data ?? [];
       const ids = Array.from(new Set(list.map((v: any) => v.created_by).filter(Boolean)));
