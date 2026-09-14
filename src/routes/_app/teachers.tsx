@@ -30,7 +30,7 @@ function TeachersPage() {
   const [form, setForm] = useState(emptyForm);
   const [resetUser, setResetUser] = useState<{ id: string; username: string } | null>(null);
   const [deleteUser, setDeleteUser] = useState<{ id: string; username: string } | null>(null);
-  const [assignUser, setAssignUser] = useState<{ id: string; name: string } | null>(null);
+  const [assignUser, setAssignUser] = useState<{ id: string; name: string; role?: string } | null>(null);
   const [newPwd, setNewPwd] = useState("");
   const resetFn = useServerFn(adminResetUserPassword);
   const createFn = useServerFn(adminCreateUser);
