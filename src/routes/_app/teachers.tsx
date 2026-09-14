@@ -234,16 +234,18 @@ function TeachersPage() {
                   <KeyRound className="w-4 h-4 ml-1" /> كلمة المرور
                 </Button>
               </div>
-              {u.role === "teacher" && (
+              {(u.role === "teacher" || u.role === "supervisor") && (
                 <div className="text-xs text-muted-foreground space-y-1">
+                  {u.role === "teacher" && (
+                    <p>
+                      المادة: {subjects.filter((s: any) => tSubjects.some((t: any) => t.user_id === u.id && t.subject_id === s.id)).map((s: any) => s.name).join("، ") || "—"}
+                    </p>
+                  )}
                   <p>
-                    المادة: {subjects.filter((s: any) => tSubjects.some((t: any) => t.user_id === u.id && t.subject_id === s.id)).map((s: any) => s.name).join("، ") || "—"}
+                    الصفوف: {classes.filter((c: any) => tClasses.some((t: any) => t.user_id === u.id && t.class_id === c.id)).map((c: any) => c.name).join("، ") || (u.role === "supervisor" ? "كل الصفوف" : "—")}
                   </p>
-                  <p>
-                    الصفوف: {classes.filter((c: any) => tClasses.some((t: any) => t.user_id === u.id && t.class_id === c.id)).map((c: any) => c.name).join("، ") || "—"}
-                  </p>
-                  <Button variant="outline" size="sm" className="w-full" onClick={() => setAssignUser({ id: u.id, name: u.full_name || u.username })}>
-                    تعديل المواد والصفوف
+                  <Button variant="outline" size="sm" className="w-full" onClick={() => setAssignUser({ id: u.id, name: u.full_name || u.username, role: u.role })}>
+                    {u.role === "supervisor" ? "تعديل الصفوف التي يتابعها" : "تعديل المواد والصفوف"}
                   </Button>
                 </div>
               )}
