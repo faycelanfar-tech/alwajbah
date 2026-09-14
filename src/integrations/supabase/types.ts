@@ -857,6 +857,10 @@ export type Database = {
       is_site_owner: { Args: never; Returns: boolean }
       record_login: { Args: never; Returns: undefined }
       site_owner_id: { Args: never; Returns: string }
+      supervises_student: {
+        Args: { _student_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role:

@@ -30,7 +30,7 @@ function TeachersPage() {
   const [form, setForm] = useState(emptyForm);
   const [resetUser, setResetUser] = useState<{ id: string; username: string } | null>(null);
   const [deleteUser, setDeleteUser] = useState<{ id: string; username: string } | null>(null);
-  const [assignUser, setAssignUser] = useState<{ id: string; name: string } | null>(null);
+  const [assignUser, setAssignUser] = useState<{ id: string; name: string; role?: string } | null>(null);
   const [newPwd, setNewPwd] = useState("");
   const resetFn = useServerFn(adminResetUserPassword);
   const createFn = useServerFn(adminCreateUser);
@@ -234,16 +234,18 @@ function TeachersPage() {
                   <KeyRound className="w-4 h-4 ml-1" /> كلمة المرور
                 </Button>
               </div>
-              {u.role === "teacher" && (
+              {(u.role === "teacher" || u.role === "supervisor") && (
                 <div className="text-xs text-muted-foreground space-y-1">
+                  {u.role === "teacher" && (
+                    <p>
+                      المادة: {subjects.filter((s: any) => tSubjects.some((t: any) => t.user_id === u.id && t.subject_id === s.id)).map((s: any) => s.name).join("، ") || "—"}
+                    </p>
+                  )}
                   <p>
-                    المادة: {subjects.filter((s: any) => tSubjects.some((t: any) => t.user_id === u.id && t.subject_id === s.id)).map((s: any) => s.name).join("، ") || "—"}
+                    الصفوف: {classes.filter((c: any) => tClasses.some((t: any) => t.user_id === u.id && t.class_id === c.id)).map((c: any) => c.name).join("، ") || (u.role === "supervisor" ? "كل الصفوف" : "—")}
                   </p>
-                  <p>
-                    الصفوف: {classes.filter((c: any) => tClasses.some((t: any) => t.user_id === u.id && t.class_id === c.id)).map((c: any) => c.name).join("، ") || "—"}
-                  </p>
-                  <Button variant="outline" size="sm" className="w-full" onClick={() => setAssignUser({ id: u.id, name: u.full_name || u.username })}>
-                    تعديل المواد والصفوف
+                  <Button variant="outline" size="sm" className="w-full" onClick={() => setAssignUser({ id: u.id, name: u.full_name || u.username, role: u.role })}>
+                    {u.role === "supervisor" ? "تعديل الصفوف التي يتابعها" : "تعديل المواد والصفوف"}
                   </Button>
                 </div>
               )}
@@ -323,7 +325,7 @@ function TeachersPage() {
 }
 
 function AssignDialog({ user, onClose, subjects, classes, currentSubjects, currentClasses }: {
-  user: { id: string; name: string };
+  user: { id: string; name: string; role?: string };
   onClose: () => void;
   subjects: any[];
   classes: any[];
@@ -362,21 +364,28 @@ function AssignDialog({ user, onClose, subjects, classes, currentSubjects, curre
   return (
     <Dialog open onOpenChange={(v) => !v && onClose()}>
       <DialogContent>
-        <DialogHeader><DialogTitle>المواد والصفوف — {user.name}</DialogTitle></DialogHeader>
+        <DialogHeader>
+          <DialogTitle>{user.role === "supervisor" ? `الصفوف التي يتابعها — ${user.name}` : `المواد والصفوف — ${user.name}`}</DialogTitle>
+        </DialogHeader>
         <div className="space-y-4">
-          <div className="space-y-2">
-            <Label>المواد</Label>
-            <div className="max-h-36 overflow-y-auto border rounded-lg p-2 grid grid-cols-2 gap-1">
-              {subjects.map((s: any) => (
-                <label key={s.id} className="flex items-center gap-2 text-sm cursor-pointer">
-                  <input type="checkbox" checked={subjectIds.includes(s.id)} onChange={() => toggle(subjectIds, setSubjectIds, s.id)} />
-                  {s.name}
-                </label>
-              ))}
+          {user.role !== "supervisor" && (
+            <div className="space-y-2">
+              <Label>المواد</Label>
+              <div className="max-h-36 overflow-y-auto border rounded-lg p-2 grid grid-cols-2 gap-1">
+                {subjects.map((s: any) => (
+                  <label key={s.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                    <input type="checkbox" checked={subjectIds.includes(s.id)} onChange={() => toggle(subjectIds, setSubjectIds, s.id)} />
+                    {s.name}
+                  </label>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
           <div className="space-y-2">
             <Label>الصفوف</Label>
+            {user.role === "supervisor" && (
+              <p className="text-xs text-muted-foreground">إذا لم تُحدَّد أي صفوف، سيتابع المشرف جميع الصفوف.</p>
+            )}
             <div className="max-h-36 overflow-y-auto border rounded-lg p-2 grid grid-cols-2 gap-1">
               {classes.map((c: any) => (
                 <label key={c.id} className="flex items-center gap-2 text-sm cursor-pointer">

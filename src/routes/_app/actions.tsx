@@ -24,17 +24,28 @@ const severityColor: Record<string, string> = {
 };
 
 function ActionsPage() {
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const navigate = useNavigate();
   const readOnly = isReadOnlyRole(role);
   useEffect(() => { if (role && role !== "admin" && role !== "supervisor" && !isReadOnlyRole(role)) navigate({ to: "/dashboard" }); }, [role, navigate]);
 
-  const { data: violations = [] } = useQuery({
+  // الصفوف المسندة للمشرف (إن وُجدت) لتقييد ما يظهر له
+  const { data: myClassIds = null } = useQuery({
+    queryKey: ["my-supervised-classes", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data } = await supabase.from("teacher_classes").select("class_id").eq("user_id", user!.id);
+      const ids = (data ?? []).map((r: any) => r.class_id);
+      return ids.length ? ids : null;
+    },
+  });
+
+  const { data: allViolations = [] } = useQuery({
     queryKey: ["violations-actions"],
     queryFn: async () => {
       const { data } = await supabase
         .from("violations")
-        .select("*, students(full_name, classes(name)), violation_types(name, severity)")
+        .select("*, students(full_name, class_id, classes(name)), violation_types(name, severity)")
         .order("created_at", { ascending: false });
       const list = data ?? [];
       const ids = Array.from(new Set(list.map((v: any) => v.created_by).filter(Boolean)));
@@ -54,6 +65,11 @@ function ActionsPage() {
   const options: string[] = templates.length
     ? templates.map((t: any) => t.text)
     : (ACTION_OPTIONS as readonly string[]).slice();
+
+  // المشرف المسند له صفوف يرى مخالفات صفوفه فقط
+  const violations = (role === "admin" || !myClassIds)
+    ? allViolations
+    : allViolations.filter((v: any) => myClassIds.includes(v.students?.class_id));
 
   const pending = violations.filter((v: any) => !v.action_taken);
   const done = violations.filter((v: any) => v.action_taken);
