@@ -66,6 +66,11 @@ function ActionsPage() {
     ? templates.map((t: any) => t.text)
     : (ACTION_OPTIONS as readonly string[]).slice();
 
+  // المشرف المسند له صفوف يرى مخالفات صفوفه فقط
+  const violations = (role === "admin" || !myClassIds)
+    ? allViolations
+    : allViolations.filter((v: any) => myClassIds.includes(v.students?.class_id));
+
   const pending = violations.filter((v: any) => !v.action_taken);
   const done = violations.filter((v: any) => v.action_taken);
 
