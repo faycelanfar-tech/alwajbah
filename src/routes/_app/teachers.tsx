@@ -364,21 +364,28 @@ function AssignDialog({ user, onClose, subjects, classes, currentSubjects, curre
   return (
     <Dialog open onOpenChange={(v) => !v && onClose()}>
       <DialogContent>
-        <DialogHeader><DialogTitle>المواد والصفوف — {user.name}</DialogTitle></DialogHeader>
+        <DialogHeader>
+          <DialogTitle>{user.role === "supervisor" ? `الصفوف التي يتابعها — ${user.name}` : `المواد والصفوف — ${user.name}`}</DialogTitle>
+        </DialogHeader>
         <div className="space-y-4">
-          <div className="space-y-2">
-            <Label>المواد</Label>
-            <div className="max-h-36 overflow-y-auto border rounded-lg p-2 grid grid-cols-2 gap-1">
-              {subjects.map((s: any) => (
-                <label key={s.id} className="flex items-center gap-2 text-sm cursor-pointer">
-                  <input type="checkbox" checked={subjectIds.includes(s.id)} onChange={() => toggle(subjectIds, setSubjectIds, s.id)} />
-                  {s.name}
-                </label>
-              ))}
+          {user.role !== "supervisor" && (
+            <div className="space-y-2">
+              <Label>المواد</Label>
+              <div className="max-h-36 overflow-y-auto border rounded-lg p-2 grid grid-cols-2 gap-1">
+                {subjects.map((s: any) => (
+                  <label key={s.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                    <input type="checkbox" checked={subjectIds.includes(s.id)} onChange={() => toggle(subjectIds, setSubjectIds, s.id)} />
+                    {s.name}
+                  </label>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
           <div className="space-y-2">
             <Label>الصفوف</Label>
+            {user.role === "supervisor" && (
+              <p className="text-xs text-muted-foreground">إذا لم تُحدَّد أي صفوف، سيتابع المشرف جميع الصفوف.</p>
+            )}
             <div className="max-h-36 overflow-y-auto border rounded-lg p-2 grid grid-cols-2 gap-1">
               {classes.map((c: any) => (
                 <label key={c.id} className="flex items-center gap-2 text-sm cursor-pointer">
