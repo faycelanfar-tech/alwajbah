@@ -9,8 +9,9 @@ import { GraduationCap, Users, AlertTriangle, TrendingUp } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useSettings } from "@/hooks/use-settings";
 import {
-  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line,
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line, Cell,
 } from "recharts";
+import { CHART_COLORS } from "@/lib/branding";
 
 export const Route = createFileRoute("/_app/dashboard")({ component: Dashboard });
 
