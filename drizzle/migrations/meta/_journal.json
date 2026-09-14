@@ -15,6 +15,13 @@
       "when": 1789282846784,
       "tag": "0001_profiles_public_view",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789362720399,
+      "tag": "0002_supervisor_actions_scope",
+      "breakpoints": true
     }
   ]
 }
