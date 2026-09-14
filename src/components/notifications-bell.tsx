@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Bell, CheckCheck } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
@@ -18,10 +18,39 @@ type Notif = {
   created_at: string;
 };
 
+/** نغمة تنبيه قصيرة مولّدة محلياً دون ملف خارجي */
+function playAlertTone() {
+  try {
+    const Ctx = window.AudioContext || (window as any).webkitAudioContext;
+    if (!Ctx) return;
+    const ctx = new Ctx();
+    const now = ctx.currentTime;
+    [880, 1175].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      const start = now + i * 0.18;
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.25, start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.16);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + 0.18);
+    });
+    setTimeout(() => ctx.close().catch(() => {}), 900);
+  } catch {
+    /* تجاهل */
+  }
+}
+
 export function NotificationsBell() {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const qc = useQueryClient();
   const navigate = useNavigate();
+  const soundEnabled = role === "supervisor" || role === "admin";
+  const soundRef = useRef(soundEnabled);
+  soundRef.current = soundEnabled;
 
   const { data: items = [] } = useQuery({
     queryKey: ["notifications", user?.id],
@@ -41,7 +70,10 @@ export function NotificationsBell() {
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
-        () => qc.invalidateQueries({ queryKey: ["notifications", user.id] }),
+        () => {
+          if (soundRef.current) playAlertTone();
+          qc.invalidateQueries({ queryKey: ["notifications", user.id] });
+        },
       )
       .subscribe();
     return () => {
