@@ -373,6 +373,107 @@ export type Database = {
         }
         Relationships: []
       }
+      participation_cycles: {
+        Row: {
+          base_score: number
+          class_id: string
+          created_at: string
+          end_date: string | null
+          id: string
+          is_active: boolean
+          label: string | null
+          period_type: string
+          start_date: string
+          teacher_id: string
+        }
+        Insert: {
+          base_score?: number
+          class_id: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          period_type?: string
+          start_date?: string
+          teacher_id: string
+        }
+        Update: {
+          base_score?: number
+          class_id?: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          period_type?: string
+          start_date?: string
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "participation_cycles_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      participation_entries: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          cycle_id: string
+          delta: number
+          id: string
+          kind: string
+          note: string | null
+          period: number | null
+          reason: string | null
+          student_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          cycle_id: string
+          delta: number
+          id?: string
+          kind?: string
+          note?: string | null
+          period?: number | null
+          reason?: string | null
+          student_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          cycle_id?: string
+          delta?: number
+          id?: string
+          kind?: string
+          note?: string | null
+          period?: number | null
+          reason?: string | null
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "participation_entries_cycle_id_fkey"
+            columns: ["cycle_id"]
+            isOneToOne: false
+            referencedRelation: "participation_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "participation_entries_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       point_transactions: {
         Row: {
           class_id: string | null
