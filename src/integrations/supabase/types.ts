@@ -382,6 +382,7 @@ export type Database = {
           id: string
           is_active: boolean
           label: string | null
+          month: string | null
           period_type: string
           start_date: string
           teacher_id: string
@@ -394,6 +395,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           label?: string | null
+          month?: string | null
           period_type?: string
           start_date?: string
           teacher_id: string
@@ -406,6 +408,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           label?: string | null
+          month?: string | null
           period_type?: string
           start_date?: string
           teacher_id?: string
@@ -424,6 +427,7 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          criterion: string | null
           cycle_id: string
           delta: number
           id: string
@@ -436,6 +440,7 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by?: string | null
+          criterion?: string | null
           cycle_id: string
           delta: number
           id?: string
@@ -448,6 +453,7 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string | null
+          criterion?: string | null
           cycle_id?: string
           delta?: number
           id?: string

@@ -18,7 +18,7 @@ export const APP_PAGES: AppPage[] = [
   { key: "dashboard", to: "/dashboard", label: "الرئيسية", icon: LayoutDashboard, roles: VIEWERS, locked: true },
   { key: "violations", to: "/violations", label: "المخالفات", icon: AlertTriangle, roles: VIEWERS },
   { key: "actions", to: "/actions", label: "الإجراءات", icon: ClipboardCheck, roles: ["admin", "supervisor", ...READONLY_ROLES] },
-  { key: "positive", to: "/positive", label: "السلوك الإيجابي", icon: Sparkles, roles: VIEWERS },
+  { key: "positive", to: "/positive", label: "متابعة الطلاب", icon: Sparkles, roles: VIEWERS },
   { key: "academic", to: "/academic", label: "التقرير الأكاديمي", icon: BookOpen, roles: VIEWERS },
   { key: "rewards", to: "/rewards", label: "النقاط والمكافآت", icon: Trophy, roles: ["admin", "teacher"] },
   { key: "students", to: "/students", label: "الطلاب", icon: GraduationCap, roles: ["admin", "supervisor", "teacher"] },
