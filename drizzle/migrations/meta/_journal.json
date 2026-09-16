@@ -29,6 +29,13 @@
       "when": 1789462295189,
       "tag": "0003_participation_points",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1789539498491,
+      "tag": "0004_participation_monthly_criteria",
+      "breakpoints": true
     }
   ]
 }
