@@ -67,6 +67,17 @@ function PositivePage() {
         {canAdd && <AddDialog types={types as any[]} userId={user?.id} />}
       </div>
 
+      <Tabs defaultValue="participation" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="participation">درجات المشاركة</TabsTrigger>
+          <TabsTrigger value="log">سجل السلوك الإيجابي</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="participation">
+          <ParticipationPanel />
+        </TabsContent>
+
+        <TabsContent value="log">
       <Card className="border-0 shadow-card">
         <CardHeader>
           <CardTitle className="flex items-center justify-between gap-3 flex-wrap">
