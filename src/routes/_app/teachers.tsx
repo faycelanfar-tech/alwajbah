@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/lib/db";
 import { adminResetUserPassword } from "@/lib/password.functions";
 import { adminCreateUser, adminDeleteUser } from "@/lib/users.functions";
 import { useAuth } from "@/hooks/use-auth";

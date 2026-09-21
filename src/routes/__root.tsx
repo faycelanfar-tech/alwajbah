@@ -1,4 +1,5 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient } from "@tanstack/react-query";
+import { OfflineQueryProvider } from "@/lib/query-persist";
 import {
   Outlet,
   createRootRouteWithContext,
@@ -12,7 +13,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/hooks/use-auth";
 import { SettingsProvider } from "@/hooks/use-settings";
 import { ThemeProvider } from "@/hooks/use-theme";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/lib/db";
 import appCss from "../styles.css?url";
 
 function NotFoundComponent() {
@@ -94,7 +95,7 @@ function RootComponent() {
   }, [router, queryClient]);
 
   return (
-    <QueryClientProvider client={queryClient}>
+    <OfflineQueryProvider client={queryClient}>
       <ThemeProvider>
         <AuthProvider>
           <SettingsProvider>
@@ -103,6 +104,6 @@ function RootComponent() {
           </SettingsProvider>
         </AuthProvider>
       </ThemeProvider>
-    </QueryClientProvider>
+    </OfflineQueryProvider>
   );
 }
