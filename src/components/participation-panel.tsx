@@ -253,7 +253,6 @@ export function ParticipationPanel() {
         "خصومات −": r.minus,
       })),
     );
-    XLSX.utils.book_append_sheet((XLSX.utils.book_new as any)() ?? {}, ws, "متابعة");
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "متابعة الطلاب");
     XLSX.writeFile(wb, `متابعة_الطلاب_${selectedClass?.name ?? ""}_${currentMonthLabel}.xlsx`);
