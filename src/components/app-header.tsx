@@ -4,6 +4,7 @@ import { NotificationsBell } from "@/components/notifications-bell";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ChangePasswordDialog } from "@/components/change-password-dialog";
 import { GlobalSearch } from "@/components/global-search";
+import { SyncIndicator } from "@/components/sync-indicator";
 import { ROLE_LABELS } from "@/components/app-sidebar";
 import { SITE_OWNER_LABEL } from "@/lib/branding";
 import { useAuth } from "@/hooks/use-auth";
@@ -34,6 +35,7 @@ export function AppHeader() {
               <p className="text-xs text-muted-foreground">{isOwner ? SITE_OWNER_LABEL : (ROLE_LABELS[role ?? ""] ?? "مستخدم")}</p>
             </div>
           )}
+          <SyncIndicator />
           <GlobalSearch />
           <NotificationsBell />
           <ChangePasswordDialog />

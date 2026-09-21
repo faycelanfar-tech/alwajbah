@@ -1,4 +1,5 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient } from "@tanstack/react-query";
+import { OfflineQueryProvider } from "@/lib/query-persist";
 import {
   Outlet,
   createRootRouteWithContext,
@@ -94,7 +95,7 @@ function RootComponent() {
   }, [router, queryClient]);
 
   return (
-    <QueryClientProvider client={queryClient}>
+    <OfflineQueryProvider client={queryClient}>
       <ThemeProvider>
         <AuthProvider>
           <SettingsProvider>
@@ -103,6 +104,6 @@ function RootComponent() {
           </SettingsProvider>
         </AuthProvider>
       </ThemeProvider>
-    </QueryClientProvider>
+    </OfflineQueryProvider>
   );
 }
