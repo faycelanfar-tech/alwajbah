@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/lib/db";
 import { useAuth } from "@/hooks/use-auth";
 import { APP_PAGES } from "@/lib/pages";
 

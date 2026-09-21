@@ -12,7 +12,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/hooks/use-auth";
 import { SettingsProvider } from "@/hooks/use-settings";
 import { ThemeProvider } from "@/hooks/use-theme";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/lib/db";
 import appCss from "../styles.css?url";
 
 function NotFoundComponent() {

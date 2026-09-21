@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/lib/db";
 import { DEVELOPER_CREDIT, LEVEL_COLORS, ACADEMIC_LEVELS } from "@/lib/branding";
 
 interface Settings {

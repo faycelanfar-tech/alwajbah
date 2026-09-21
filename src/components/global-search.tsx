@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/lib/db";
 import { usePagePermissions } from "@/hooks/use-page-permissions";
 import { ROLE_LABELS } from "@/lib/branding";
 import { Button } from "@/components/ui/button";
