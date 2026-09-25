@@ -118888,6 +118888,12 @@ const queryClient = new QueryClient({
     mutations: { networkMode: "offlineFirst" }
   }
 });
+const rootOpts = routeTree.options;
+rootOpts.shellComponent = ({ children }) => /* @__PURE__ */ jsxRuntimeExports.jsx(jsxRuntimeExports.Fragment, { children });
+if (rootOpts.head) {
+  const origHead = rootOpts.head;
+  rootOpts.head = (ctx) => ({ ...origHead(ctx), links: [] });
+}
 const router = createRouter({
   routeTree,
   context: { queryClient },

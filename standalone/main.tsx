@@ -17,6 +17,14 @@ const queryClient = new QueryClient({
   },
 });
 
+// في النسخة المحمولة لا نرسم وسوم html/head/body داخل عنصر root (يسبب تجمّد الصفحة)
+const rootOpts = (routeTree as any).options;
+rootOpts.shellComponent = ({ children }: { children: React.ReactNode }) => <>{children}</>;
+if (rootOpts.head) {
+  const origHead = rootOpts.head;
+  rootOpts.head = (ctx: any) => ({ ...origHead(ctx), links: [] });
+}
+
 const router = createRouter({
   routeTree,
   context: { queryClient },
