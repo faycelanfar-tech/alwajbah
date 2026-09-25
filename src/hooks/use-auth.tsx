@@ -172,7 +172,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
+    if (error) throw new Error((error as { message?: string }).message || "Invalid login credentials");
     if (data.user) {
       const { data: p } = await supabase.from("profiles").select("is_active").eq("id", data.user.id).maybeSingle();
       if (p && (p as { is_active?: boolean }).is_active === false) {

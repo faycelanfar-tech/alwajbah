@@ -23256,7 +23256,7 @@ function AuthProvider({ children }) {
       throw new Error("لا يوجد اتصال بالإنترنت، ويمكن الدخول بدون اتصال فقط بآخر حساب استُخدم على هذا الجهاز.");
     }
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
+    if (error) throw new Error(error.message || "Invalid login credentials");
     if (data.user) {
       const { data: p2 } = await supabase.from("profiles").select("is_active").eq("id", data.user.id).maybeSingle();
       if (p2 && p2.is_active === false) {
@@ -27655,7 +27655,7 @@ function LoginPage() {
       await signIn(username, password);
       toast.success("تم تسجيل الدخول بنجاح");
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = err instanceof Error ? err.message : err?.message ?? "تعذّر تسجيل الدخول";
       toast.error(msg.includes("Invalid") ? "اسم المستخدم أو كلمة المرور غير صحيحة" : msg);
     } finally {
       setSubmitting(false);

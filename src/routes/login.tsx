@@ -45,7 +45,10 @@ function LoginPage() {
       await signIn(username, password);
       toast.success("تم تسجيل الدخول بنجاح");
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg =
+        err instanceof Error
+          ? err.message
+          : (err as { message?: string } | null)?.message ?? "تعذّر تسجيل الدخول";
       toast.error(msg.includes("Invalid") ? "اسم المستخدم أو كلمة المرور غير صحيحة" : msg);
     } finally {
       setSubmitting(false);
