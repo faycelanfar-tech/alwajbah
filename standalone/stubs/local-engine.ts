@@ -56,26 +56,162 @@ function seedDb(): LocalDB {
   return { tables, accounts };
 }
 
-let db: LocalDB = (() => {
-  const raw = ls.get(DB_KEY);
-  if (raw) {
+/* ---------------- الملف المشترك على الشبكة (Electron / NW.js) ---------------- */
+
+interface FileBridge {
+  getPath(): string;
+  setPath(p: string): boolean;
+  choosePath?(): string | null;
+  stat(): number | null; // وقت آخر تعديل أو null إن لم يوجد
+  read(): string | null;
+  write(text: string): boolean; // كتابة ذرية
+}
+
+function resolveBridge(): FileBridge | null {
+  const w: any = typeof window !== "undefined" ? window : {};
+  if (w.alwajbahFS) return w.alwajbahFS as FileBridge;
+  // NW.js: وصول مباشر لـ Node
+  if (typeof w.nw !== "undefined" && typeof w.require === "function") {
     try {
-      const parsed = JSON.parse(raw) as LocalDB;
-      if (parsed?.tables) return parsed;
-    } catch {
-      /* تالف: نعيد التهيئة */
-    }
+      const fs = w.require("fs");
+      const path = w.require("path");
+      const PKEY = "alwajbah.sharedPath";
+      const def = () => path.join(path.dirname(w.process.execPath), "alwajbah-data.json");
+      const cur = () => localStorage.getItem(PKEY) || def();
+      return {
+        getPath: cur,
+        setPath: (p: string) => { localStorage.setItem(PKEY, p); return true; },
+        stat: () => { try { return fs.statSync(cur()).mtimeMs; } catch { return null; } },
+        read: () => { try { return fs.readFileSync(cur(), "utf8"); } catch { return null; } },
+        write: (t: string) => {
+          try {
+            const tmp = cur() + ".tmp-" + Date.now();
+            fs.writeFileSync(tmp, t, "utf8");
+            fs.renameSync(tmp, cur());
+            return true;
+          } catch { return false; }
+        },
+      };
+    } catch { return null; }
   }
+  return null;
+}
+
+const bridge = resolveBridge();
+export const sharedMode = !!bridge;
+export function getSharedPath() { return bridge?.getPath() ?? ""; }
+export function setSharedPath(p: string) {
+  if (!bridge) return false;
+  const ok = bridge.setPath(p);
+  if (ok) { lastMtime = null; reloadFromShared(true); }
+  return ok;
+}
+export function chooseSharedPath() {
+  const p = bridge?.choosePath?.();
+  if (p) { lastMtime = null; reloadFromShared(true); }
+  return p ?? null;
+}
+
+let lastMtime: number | null = null;
+let base: LocalDB | null = null; // آخر نسخة مقروءة من الملف (للدمج)
+const listeners = new Set<() => void>();
+export function subscribeShared(fn: () => void) { listeners.add(fn); return () => { listeners.delete(fn); }; }
+let lastSync = Date.now();
+export function getLastSync() { return lastSync; }
+
+function clone<T>(v: T): T { return JSON.parse(JSON.stringify(v)); }
+
+function parseDb(raw: string | null): LocalDB | null {
+  if (!raw) return null;
+  try {
+    const p = JSON.parse(raw) as LocalDB;
+    return p?.tables ? { tables: p.tables, accounts: p.accounts ?? [] } : null;
+  } catch { return null; }
+}
+
+/** يطبّق تغييرات هذا الجهاز (مقارنة بالأساس) فوق نسخة الملف الأحدث — الأحدث يفوز لكل سجل */
+function mergeRows(remote: Row[], local: Row[], baseRows: Row[], key = "id"): Row[] {
+  const b = new Map(baseRows.map((r) => [r[key], JSON.stringify(r)]));
+  const l = new Map(local.map((r) => [r[key], r]));
+  const out = new Map(remote.map((r) => [r[key], r]));
+  for (const [id, row] of l) if (b.get(id) !== JSON.stringify(row)) out.set(id, row);
+  for (const id of b.keys()) if (!l.has(id)) out.delete(id);
+  return [...out.values()];
+}
+
+function mergeDb(remote: LocalDB, local: LocalDB, baseDb: LocalDB): LocalDB {
+  const names = new Set([...Object.keys(remote.tables), ...Object.keys(local.tables)]);
+  const tables: Tables = {};
+  for (const n of names) {
+    const hasKey = [...(local.tables[n] ?? []), ...(remote.tables[n] ?? [])].every((r) => r && r.id != null);
+    tables[n] = hasKey
+      ? mergeRows(remote.tables[n] ?? [], local.tables[n] ?? [], baseDb.tables[n] ?? [])
+      : (local.tables[n] ?? remote.tables[n] ?? []);
+  }
+  return { tables, accounts: mergeRows(remote.accounts, local.accounts, baseDb.accounts) };
+}
+
+/** يعيد قراءة الملف المشترك إن تغيّر. يعيد true إن تغيّرت البيانات. */
+export function reloadFromShared(force = false): boolean {
+  if (!bridge) return false;
+  const m = bridge.stat();
+  lastSync = Date.now();
+  if (m == null) {
+    // الملف غير موجود بعد: ننشئه من البيانات الحالية
+    bridge.write(JSON.stringify(db));
+    lastMtime = bridge.stat();
+    base = clone(db);
+    return false;
+  }
+  if (!force && m === lastMtime) return false;
+  const remote = parseDb(bridge.read());
+  if (!remote) return false;
+  db = base ? mergeDb(remote, db, base) : remote;
+  base = remote;
+  lastMtime = m;
+  ls.set(DB_KEY, JSON.stringify(db));
+  listeners.forEach((f) => f());
+  return true;
+}
+
+let db: LocalDB = (() => {
+  const raw = bridge?.read() ?? ls.get(DB_KEY);
+  const parsed = parseDb(raw);
+  if (parsed) return parsed;
+  const local = parseDb(ls.get(DB_KEY));
+  if (local) return local;
   const fresh = seedDb();
   ls.set(DB_KEY, JSON.stringify(fresh));
   return fresh;
 })();
+if (bridge) {
+  base = clone(db);
+  lastMtime = bridge.stat();
+  if (lastMtime == null) { bridge.write(JSON.stringify(db)); lastMtime = bridge.stat(); }
+}
+
+function writeShared() {
+  if (!bridge) return;
+  const m = bridge.stat();
+  if (m != null && m !== lastMtime && base) {
+    const remote = parseDb(bridge.read());
+    if (remote) db = mergeDb(remote, db, base);
+  }
+  if (bridge.write(JSON.stringify(db))) {
+    base = clone(db);
+    lastMtime = bridge.stat();
+    lastSync = Date.now();
+  }
+}
 
 let saveTimer: number | undefined;
 function persist() {
   if (typeof window === "undefined") return;
   window.clearTimeout(saveTimer);
-  saveTimer = window.setTimeout(() => ls.set(DB_KEY, JSON.stringify(db)), 120);
+  saveTimer = window.setTimeout(() => {
+    ls.set(DB_KEY, JSON.stringify(db));
+    writeShared();
+  }, 120);
 }
 
 function table(name: string): Row[] {
