@@ -1,0 +1,8 @@
+{
+  "name": "alwajbah-desktop",
+  "version": "1.0.0",
+  "description": "نظام مدرسة الوجبة الابتدائية - نسخة الشبكة المحلية",
+  "main": "main.cjs",
+  "window": { "title": "مدرسة الوجبة الابتدائية", "width": 1366, "height": 860 },
+  "scripts": { "start": "electron ." }
+}
