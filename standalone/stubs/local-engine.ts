@@ -67,9 +67,42 @@ interface FileBridge {
   write(text: string): boolean; // كتابة ذرية
 }
 
+/** جسر عبر المشغّل المحلي (ملف التشغيل .bat) — يحفظ في ملف JSON داخل مجلد OneDrive المشترك */
+function httpBridge(): FileBridge | null {
+  if (typeof window === "undefined") return null;
+  if (!/^https?:$/.test(window.location.protocol)) return null;
+  const req = (method: string, url: string, body?: string): { status: number; text: string } | null => {
+    try {
+      const x = new XMLHttpRequest();
+      x.open(method, url, false);
+      x.send(body ?? null);
+      return { status: x.status, text: x.responseText };
+    } catch { return null; }
+  };
+  const ping = req("GET", "/__data/ping");
+  if (!ping || ping.status !== 200 || ping.text.trim() !== "ok") return null;
+  return {
+    getPath: () => req("GET", "/__data/path")?.text ?? "",
+    setPath: (p: string) => req("POST", "/__data/path", p)?.status === 200,
+    stat: () => {
+      const r = req("GET", "/__data/stat");
+      if (!r || r.status !== 200) return null;
+      const t = r.text.trim();
+      return t === "null" || t === "" ? null : Number(t);
+    },
+    read: () => {
+      const r = req("GET", "/__data/read");
+      return r && r.status === 200 ? r.text : null;
+    },
+    write: (t: string) => req("POST", "/__data/write", t)?.status === 200,
+  };
+}
+
 function resolveBridge(): FileBridge | null {
   const w: any = typeof window !== "undefined" ? window : {};
   if (w.alwajbahFS) return w.alwajbahFS as FileBridge;
+  const http = httpBridge();
+  if (http) return http;
   // NW.js: وصول مباشر لـ Node
   if (typeof w.nw !== "undefined" && typeof w.require === "function") {
     try {
