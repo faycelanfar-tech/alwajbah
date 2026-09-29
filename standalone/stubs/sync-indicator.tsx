@@ -7,7 +7,7 @@ import { RefreshCw, FolderSync, HardDrive } from "lucide-react";
 import { toast } from "sonner";
 import {
   sharedMode, reloadFromShared, subscribeShared, getLastSync,
-  getSharedPath, setSharedPath, chooseSharedPath,
+  getSharedPath, setSharedPath, chooseSharedPath, bridgeKind,
 } from "./local-engine";
 
 const POLL_MS = 5000;
@@ -50,7 +50,13 @@ export function SyncIndicator() {
         </DialogTrigger>
         <DialogContent dir="rtl">
           <DialogHeader><DialogTitle>مكان حفظ البيانات</DialogTitle></DialogHeader>
-          {sharedMode ? (
+          {sharedMode && bridgeKind === "fsa" ? (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">البيانات محفوظة ومشفّرة في الملف المشترك:</p>
+              <p dir="ltr" className="font-mono text-sm">{path}</p>
+              <Button variant="outline" onClick={() => chooseSharedPath()}>اختيار ملف آخر…</Button>
+            </div>
+          ) : sharedMode ? (
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">
                 ضع مسار ملف البيانات داخل مجلد الشبكة المشترك، ليرى جميع المعلمين والمشرفين البيانات نفسها.
