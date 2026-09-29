@@ -4,6 +4,8 @@ import { QueryClient } from "@tanstack/react-query";
 import { RouterProvider, createRouter, createHashHistory } from "@tanstack/react-router";
 import { routeTree } from "../src/routeTree.gen";
 import "../src/styles.css";
+import { runGate } from "./gate";
+import { attachBridge } from "./stubs/local-engine";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -42,9 +44,14 @@ declare module "@tanstack/react-router" {
 document.documentElement.lang = "ar";
 document.documentElement.dir = "rtl";
 
-const rootEl = document.getElementById("root")!;
-ReactDOM.createRoot(rootEl).render(
-  <React.StrictMode>
-    <RouterProvider router={router} />
-  </React.StrictMode>,
-);
+void (async () => {
+  const { ok, bridge } = await runGate();
+  if (!ok) return;
+  if (bridge) attachBridge(bridge, "fsa");
+  const rootEl = document.getElementById("root")!;
+  ReactDOM.createRoot(rootEl).render(
+    <React.StrictMode>
+      <RouterProvider router={router} />
+    </React.StrictMode>,
+  );
+})();
