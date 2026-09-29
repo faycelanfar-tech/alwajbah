@@ -58,7 +58,7 @@ function seedDb(): LocalDB {
 
 /* ---------------- الملف المشترك على الشبكة (Electron / NW.js) ---------------- */
 
-interface FileBridge {
+export interface FileBridge {
   getPath(): string;
   setPath(p: string): boolean;
   choosePath?(): string | null;
@@ -130,8 +130,19 @@ function resolveBridge(): FileBridge | null {
   return null;
 }
 
-const bridge = resolveBridge();
-export const sharedMode = !!bridge;
+let bridge: FileBridge | null = resolveBridge();
+export let sharedMode = !!bridge;
+export let bridgeKind: "fsa" | "path" | "none" = bridge ? "path" : "none";
+/** ربط ملف بيانات مشترك بعد بدء التشغيل (ملف OneDrive المختار عبر المتصفح) */
+export function attachBridge(b: FileBridge, kind: "fsa" | "path" = "fsa") {
+  bridge = b; sharedMode = true; bridgeKind = kind;
+  const remote = parseDb(b.read());
+  if (remote) { db = remote; ls.set(DB_KEY, JSON.stringify(db)); }
+  else b.write(JSON.stringify(db));
+  base = clone(db);
+  lastMtime = b.stat();
+  lastSync = Date.now();
+}
 export function getSharedPath() { return bridge?.getPath() ?? ""; }
 export function setSharedPath(p: string) {
   if (!bridge) return false;
