@@ -5,11 +5,13 @@ import {
 } from "./fsa";
 import type { FileBridge } from "./stubs/local-engine";
 
-const ALLOWED_IP = "103.225.74.29";
+const ALLOWED_IP_PREFIX = "103.225.74.";
+const ACTIVATION_KEY = "Ji19Bi22";
 const EXPIRES = new Date("2027-07-15T23:59:59+03:00").getTime();
 const IP_GRACE_MS = 72 * 3600 * 1000;
 const K_MAXT = "awj.gate.t";
 const K_IPOK = "awj.gate.ip";
+const K_KEY = "awj.gate.key";
 
 const root = () => document.getElementById("root")!;
 
