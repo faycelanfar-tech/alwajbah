@@ -169,9 +169,9 @@ export async function makeDirBridge(dir: any): Promise<FileBridge> {
 
   /** يعيد بناء الحالة من النسخة المرجعية + كل المعاملات */
   async function rebuild(names?: string[]) {
-    const snap = parseDb(await readFileText(dir, SNAPSHOT)) ?? emptyDb();
+    const snap = parseDb(await readFileText(dir, SNAPSHOT));
     const list = names ?? (await listTxnNames(dir));
-    let db = snap;
+    let db = snap ?? emptyDb();
     const applied = new Set<string>();
     for (const n of list) {
       const raw = await readFileText(dir, n);
@@ -185,7 +185,8 @@ export async function makeDirBridge(dir: any): Promise<FileBridge> {
     }
     merged = db;
     known = new Set(list);
-    version++;
+    // المجلد فارغ تماماً: نترك version = 0 ليعرف المحرك أنه لا توجد بيانات بعد
+    if (snap || list.length) version++;
   }
 
   /** دمج الملفات الكثيرة في نسخة مرجعية واحدة وحذف القديم */
