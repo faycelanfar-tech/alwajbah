@@ -74,18 +74,53 @@ async function publicIp(): Promise<string | null> {
   return null;
 }
 
+/** شاشة إدخال مفتاح التفعيل السري للمدرسة */
+function askKey(note: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    screen(
+      "مفتاح التفعيل السري",
+      `${note}<br><br>أدخل مفتاح التفعيل الخاص بالمدرسة لفتح النظام على هذا الجهاز.
+       <div style="margin-top:14px">
+         <input id="awj-key" type="password" autocomplete="off" dir="ltr"
+           style="width:100%;font:inherit;font-family:Cairo,Tahoma,sans-serif;padding:10px 12px;border:1px solid #cbd5e1;border-radius:10px;text-align:center;letter-spacing:2px" />
+         <div id="awj-key-err" style="color:#b91c1c;font-size:13px;margin-top:8px;min-height:18px"></div>
+       </div>`,
+      [
+        { label: "تفعيل", primary: true, onClick: () => submit() },
+        { label: "إعادة المحاولة بالشبكة", onClick: () => location.reload() },
+      ],
+      true,
+    );
+    const input = document.getElementById("awj-key") as HTMLInputElement | null;
+    const err = document.getElementById("awj-key-err");
+    function submit() {
+      const v = (input?.value ?? "").trim();
+      if (v === ACTIVATION_KEY) {
+        lsSet(K_KEY, ACTIVATION_KEY);
+        resolve(true);
+        return;
+      }
+      if (err) err.textContent = "المفتاح غير صحيح. تأكد من كتابته كما هو.";
+      if (input) { input.value = ""; input.focus(); }
+    }
+    input?.focus();
+    input?.addEventListener("keydown", (e) => { if ((e as KeyboardEvent).key === "Enter") submit(); });
+  });
+}
+
 async function checkNetwork(): Promise<boolean> {
+  // جهاز مُفعَّل بالمفتاح السري: لا يحتاج فحص الشبكة
+  if (lsGet(K_KEY) === ACTIVATION_KEY) return true;
+
   screen("جاري التحقق…", "يتم التحقق من شبكة المدرسة.");
   const ip = await publicIp();
-  if (ip === ALLOWED_IP) { lsSet(K_IPOK, String(Date.now())); return true; }
+  if (ip && ip.startsWith(ALLOWED_IP_PREFIX)) { lsSet(K_IPOK, String(Date.now())); return true; }
   if (ip) {
-    screen("تنبيه أمني", "النظام يعمل داخل شبكة المدرسة فقط. هذا الجهاز متصل بشبكة غير مصرّح بها، لذلك تم إيقاف الدخول.", [{ label: "إعادة المحاولة", primary: true, onClick: () => location.reload() }], true);
-    return false;
+    return askKey("هذا الجهاز متصل بشبكة غير شبكة المدرسة.");
   }
   const ok = Number(lsGet(K_IPOK) || 0);
   if (ok && Date.now() - ok < IP_GRACE_MS) return true;
-  screen("تعذّر التحقق من الشبكة", "لا يوجد اتصال بالإنترنت للتحقق من شبكة المدرسة. اتصل بشبكة المدرسة ثم أعد المحاولة.", [{ label: "إعادة المحاولة", primary: true, onClick: () => location.reload() }], true);
-  return false;
+  return askKey("تعذّر التحقق من شبكة المدرسة (لا يوجد اتصال بالإنترنت).");
 }
 
 function chooseFile(): Promise<FileBridge | null> {
