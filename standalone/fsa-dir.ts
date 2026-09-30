@@ -244,13 +244,22 @@ export async function makeDirBridge(dir: any): Promise<FileBridge> {
       return null;
     },
     stat: () => (version === 0 ? null : version),
-    read: () => JSON.stringify(merged),
+    read: () => (version === 0 ? null : JSON.stringify(merged)),
     write: (t: string) => {
       const next = parseDb(t);
       if (!next) return false;
-      const txn = diffDb(merged, next);
+      const first = version === 0;
+      const txn = first ? null : diffDb(merged, next);
       merged = next;
       version++;
+      // أول كتابة في مجلد فارغ: نكتب النسخة المرجعية كاملة بدل معاملة ضخمة
+      if (first) {
+        chain = chain.then(async () => {
+          try { await writeFileText(dir, SNAPSHOT, JSON.stringify(merged)); }
+          catch (e) { console.error("تعذّر إنشاء ملف البيانات المرجعي", e); }
+        });
+        return true;
+      }
       if (!txn) return true;
       const name = `${TXN_PREFIX}${txn.ts}_${dev}_${txn.id.slice(-6)}.awj`;
       chain = chain.then(async () => {
