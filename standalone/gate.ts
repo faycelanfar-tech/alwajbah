@@ -125,7 +125,23 @@ async function checkNetwork(): Promise<boolean> {
 
 function chooseFile(): Promise<FileBridge | null> {
   return new Promise((resolve) => {
-    const finish = async (h: any) => {
+    const localOnly = { label: "العمل على هذا الجهاز فقط", onClick: () => resolve(null) };
+
+    /* --- المجلد المشترك (صندوق المعاملات) --- */
+    const finishDir = async (d: any) => {
+      try {
+        if (!(await ensureDirPermission(d, true))) return;
+        await saveDir(d);
+        screen("جاري فتح المجلد المشترك…", "يتم قراءة بيانات المدرسة ودمج آخر المعاملات.");
+        resolve(await makeDirBridge(d));
+      } catch (e: any) {
+        screen("تعذّر فتح المجلد", `${e?.message ?? "المجلد غير صالح"}`, [{ label: "إعادة المحاولة", primary: true, onClick: () => location.reload() }], true);
+      }
+    };
+    const pickFolder = async () => { try { await finishDir(await pickDir()); } catch { /* أُلغي */ } };
+
+    /* --- الطريقة القديمة: ملف واحد --- */
+    const finishFile = async (h: any) => {
       try {
         if (!(await ensurePermission(h, true))) return;
         await saveHandle(h);
@@ -134,32 +150,36 @@ function chooseFile(): Promise<FileBridge | null> {
         screen("تعذّر فتح الملف", `${e?.message ?? "الملف غير صالح"}`, [{ label: "إعادة المحاولة", primary: true, onClick: () => location.reload() }], true);
       }
     };
-    const pickOpen = async () => { try { await finish(await pickExisting()); } catch { /* أُلغي */ } };
-    const pickCreate = async () => { try { await finish(await pickNew()); } catch { /* أُلغي */ } };
-    const localOnly = { label: "العمل على هذا الجهاز فقط", onClick: () => resolve(null) };
+    const pickOpen = async () => { try { await finishFile(await pickExisting()); } catch { /* أُلغي */ } };
 
-    if (!fsaSupported) {
-      screen("متصفح غير مدعوم", "لحفظ البيانات في ملف OneDrive المشترك افتح النظام بمتصفح Microsoft Edge أو Google Chrome.", [localOnly], true);
+    if (!dirSupported && !fsaSupported) {
+      screen("متصفح غير مدعوم", "لحفظ البيانات في مجلد OneDrive المشترك افتح النظام بمتصفح Microsoft Edge أو Google Chrome.", [localOnly], true);
       return;
     }
     void (async () => {
-      const saved = await savedHandle();
-      if (saved) {
+      const dir = await savedDir();
+      if (dir) {
         try {
-          if (await ensurePermission(saved, false)) { resolve(await makeBridge(saved)); return; }
+          if (await ensureDirPermission(dir, false)) { await finishDir(dir); return; }
         } catch { /* نطلب من جديد */ }
-        screen("ملف البيانات المشترك", `اضغط «متابعة» للسماح للنظام بقراءة وحفظ الملف:<br><b dir="ltr">${saved.name}</b>`, [
-          { label: "متابعة", primary: true, onClick: () => void finish(saved) },
-          { label: "اختيار ملف آخر", onClick: pickOpen },
+        screen("مجلد البيانات المشترك", `اضغط «متابعة» للسماح للنظام بالعمل داخل المجلد:<br><b dir="ltr">${dir.name}</b>`, [
+          { label: "متابعة", primary: true, onClick: () => void finishDir(dir) },
+          { label: "اختيار مجلد آخر", onClick: pickFolder },
           localOnly,
         ]);
         return;
       }
-      screen("ملف البيانات المشترك", "اختر ملف البيانات الموجود في مجلد OneDrive المشترك (alwajbah-data.awj).<br>إذا كانت هذه أول مرة، أنشئ ملفاً جديداً داخل المجلد المشترك.", [
-        { label: "فتح ملف البيانات", primary: true, onClick: pickOpen },
-        { label: "إنشاء ملف جديد", onClick: pickCreate },
-        localOnly,
-      ]);
+      const saved = await savedHandle();
+      screen(
+        "مجلد البيانات المشترك",
+        `اختر مجلد OneDrive المشترك الخاص بالمدرسة.<br>
+         يحفظ كل معلم عملياته في ملف مستقل داخله، فتظهر لدى المشرف تلقائياً خلال ثوانٍ دون تعارض.`,
+        [
+          { label: "اختيار المجلد المشترك", primary: true, onClick: pickFolder },
+          ...(saved ? [{ label: `متابعة بالملف القديم (${saved.name})`, onClick: () => void finishFile(saved) }] : [{ label: "استخدام ملف بيانات قديم", onClick: pickOpen }]),
+          localOnly,
+        ],
+      );
     })();
   });
 }
