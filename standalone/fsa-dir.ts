@@ -206,9 +206,7 @@ export async function makeDirBridge(dir: any): Promise<FileBridge> {
 
   await rebuild();
   ready = true;
-  if (!Object.keys(merged.tables).length) {
-    // المجلد فارغ: النسخة المرجعية ستُكتب عند أول حفظ من المحرك
-  }
+
 
   /** فحص دوري: هل وصلت معاملات جديدة من أجهزة أخرى؟ */
   const poll = async () => {
