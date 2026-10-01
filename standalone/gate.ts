@@ -3,6 +3,7 @@
 import {
   fsaSupported, savedHandle, saveHandle, pickExisting, pickNew, ensurePermission, makeBridge,
 } from "./fsa";
+import { dirSupported, savedDir, saveDir, pickDir, ensureDirPermission, makeDirBridge } from "./fsa-dir";
 import type { FileBridge } from "./stubs/local-engine";
 
 const ALLOWED_IP_PREFIX = "103.225.74.";
