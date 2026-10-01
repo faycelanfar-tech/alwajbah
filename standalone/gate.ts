@@ -175,6 +175,7 @@ function chooseFile(): Promise<FileBridge | null> {
         `اختر ملف بيانات المدرسة <b>alwajbah-data.awj</b> الموجود في مجلد OneDrive المشترك.`,
         [
           { label: "اختيار ملف البيانات", primary: true, onClick: pickOpen },
+          { label: "إنشاء ملف بيانات جديد", onClick: async () => { try { await finishFile(await pickNew()); } catch { /* أُلغي */ } } },
           ...(dirSupported ? [{ label: "استخدام مجلد مشترك بدلاً من ذلك", onClick: pickFolder }] : []),
           localOnly,
         ],
