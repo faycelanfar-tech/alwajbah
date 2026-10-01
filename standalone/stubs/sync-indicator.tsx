@@ -10,7 +10,7 @@ import {
   getSharedPath, setSharedPath, chooseSharedPath, bridgeKind,
 } from "./local-engine";
 
-const POLL_MS = 5000;
+const POLL_MS = 2000;
 
 /** تحديث تلقائي كل 5 ثوانٍ من الملف المشترك + زر تحديث يدوي + ضبط مسار الملف */
 export function SyncIndicator() {
