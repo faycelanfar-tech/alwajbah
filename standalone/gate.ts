@@ -158,29 +158,28 @@ function chooseFile(): Promise<FileBridge | null> {
       return;
     }
     void (async () => {
-      const dir = await savedDir();
-      if (dir) {
+      const saved = await savedHandle();
+      if (saved) {
         try {
-          if (await ensureDirPermission(dir, false)) { await finishDir(dir); return; }
+          if (await ensurePermission(saved, false)) { await finishFile(saved); return; }
         } catch { /* نطلب من جديد */ }
-        screen("مجلد البيانات المشترك", `اضغط «متابعة» للسماح للنظام بالعمل داخل المجلد:<br><b dir="ltr">${dir.name}</b>`, [
-          { label: "متابعة", primary: true, onClick: () => void finishDir(dir) },
-          { label: "اختيار مجلد آخر", onClick: pickFolder },
+        screen("ملف البيانات المشترك", `اضغط «متابعة» للسماح للنظام بالعمل على الملف:<br><b dir="ltr">${saved.name}</b>`, [
+          { label: "متابعة", primary: true, onClick: () => void finishFile(saved) },
+          { label: "اختيار ملف آخر", onClick: pickOpen },
           localOnly,
         ]);
         return;
       }
-      const saved = await savedHandle();
       screen(
-        "مجلد البيانات المشترك",
-        `اختر مجلد OneDrive المشترك الخاص بالمدرسة.<br>
-         يحفظ كل معلم عملياته في ملف مستقل داخله، فتظهر لدى المشرف تلقائياً خلال ثوانٍ دون تعارض.`,
+        "ملف البيانات المشترك",
+        `اختر ملف بيانات المدرسة <b>alwajbah-data.awj</b> الموجود في مجلد OneDrive المشترك.`,
         [
-          { label: "اختيار المجلد المشترك", primary: true, onClick: pickFolder },
-          ...(saved ? [{ label: `متابعة بالملف القديم (${saved.name})`, onClick: () => void finishFile(saved) }] : [{ label: "استخدام ملف بيانات قديم", onClick: pickOpen }]),
+          { label: "اختيار ملف البيانات", primary: true, onClick: pickOpen },
+          ...(dirSupported ? [{ label: "استخدام مجلد مشترك بدلاً من ذلك", onClick: pickFolder }] : []),
           localOnly,
         ],
       );
+      void savedDir;
     })();
   });
 }
