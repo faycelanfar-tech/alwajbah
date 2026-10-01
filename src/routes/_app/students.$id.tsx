@@ -120,15 +120,6 @@ function StudentProfile() {
       })
       .join("");
 
-    const rows = violations.map((v: any) => `
-      <tr>
-        <td>${esc(v.violation_date)}</td>
-        <td>${esc(v.violation_types?.name || "—")}</td>
-        <td>${esc(v.violation_types?.severity || "—")}</td>
-        <td>${esc(v.description || "—")}</td>
-        <td>${esc(v.action_taken || "بانتظار إجراء")}</td>
-      </tr>
-    `).join("");
 
     const posRows = positives.map((p: any) => `
       <tr>
@@ -196,9 +187,6 @@ function StudentProfile() {
         <div><b>${stats.ratio}%</b>نسبة السلوك الإيجابي</div>
       </div>
       ${charts ? `<h2>الرسوم البيانية</h2><div class="charts">${charts}</div>` : ""}
-      <h2>سجل المخالفات والإجراءات</h2>
-      <table><thead><tr><th>التاريخ</th><th>النوع</th><th>الدرجة</th><th>الوصف</th><th>الإجراء</th></tr></thead>
-      <tbody>${rows || '<tr><td colspan="5" style="text-align:center">لا توجد مخالفات</td></tr>'}</tbody></table>
       <h2>السلوك الإيجابي</h2>
       <table><thead><tr><th>التاريخ</th><th>السلوك</th><th>النقاط</th></tr></thead>
       <tbody>${posRows || '<tr><td colspan="3" style="text-align:center">لا توجد سلوكيات مسجلة</td></tr>'}</tbody></table>
