@@ -7,12 +7,13 @@ import { dirSupported, savedDir, saveDir, pickDir, ensureDirPermission, makeDirB
 import type { FileBridge } from "./stubs/local-engine";
 
 const ALLOWED_IP_PREFIX = "103.225.74.";
+// المفتاح السنوي: يصلح للعام الدراسي الحالي فقط، ويُربط تخزينه بسنة الترخيص
 const ACTIVATION_KEY = "Ji19Bi22";
-const EXPIRES = new Date("2027-07-15T23:59:59+03:00").getTime();
+const EXPIRES = new Date("2027-06-30T23:59:59+03:00").getTime();
 const IP_GRACE_MS = 72 * 3600 * 1000;
 const K_MAXT = "awj.gate.t";
 const K_IPOK = "awj.gate.ip";
-const K_KEY = "awj.gate.key";
+const K_KEY = "awj.gate.key.2027";
 
 const root = () => document.getElementById("root")!;
 
@@ -49,7 +50,7 @@ function checkLicense(): boolean {
   }
   lsSet(K_MAXT, String(Math.max(now, maxSeen)));
   if (Math.max(now, maxSeen) > EXPIRES) {
-    screen("انتهت صلاحية الترخيص", "انتهى ترخيص استخدام النظام بتاريخ 15 يوليو 2027. يرجى التواصل مع المطوّر لتجديد التفعيل السنوي.", [], true);
+    screen("انتهت صلاحية الترخيص", "انتهى ترخيص استخدام النظام بتاريخ 30 يونيو 2027. يرجى التواصل مع المطوّر لتجديد التفعيل السنوي.", [], true);
     return false;
   }
   return true;
