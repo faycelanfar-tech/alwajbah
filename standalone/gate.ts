@@ -13,7 +13,7 @@ const EXPIRES = new Date("2027-06-30T23:59:59+03:00").getTime();
 const IP_GRACE_MS = 72 * 3600 * 1000;
 const K_MAXT = "awj.gate.t";
 const K_IPOK = "awj.gate.ip";
-const K_KEY = "awj.gate.key";
+const K_KEY = "awj.gate.key.2027";
 
 const root = () => document.getElementById("root")!;
 

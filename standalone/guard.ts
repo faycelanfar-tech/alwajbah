@@ -2,7 +2,7 @@
 const SCHOOL = "مدرسة الوجبة الابتدائية";
 const DEV = "تطوير: ابوجهاد";
 // بصمة الهوية (FNV-1a) — أي تعديل على الاسم أو التوقيع يوقف النظام
-const ID_SIG = "__ID_SIG__";
+const ID_SIG = "f2c50f4d";
 
 export function identitySig(s: string) {
   let h = 0x811c9dc5;

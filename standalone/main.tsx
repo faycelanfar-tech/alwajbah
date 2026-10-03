@@ -6,6 +6,7 @@ import { routeTree } from "../src/routeTree.gen";
 import "../src/styles.css";
 import { runGate } from "./gate";
 import { attachBridge } from "./stubs/local-engine";
+import { identityOk, installAntiTamper } from "./guard";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -45,6 +46,8 @@ document.documentElement.lang = "ar";
 document.documentElement.dir = "rtl";
 
 void (async () => {
+  if (!identityOk()) { document.getElementById("root")!.innerHTML = "<p dir=rtl style=\"padding:40px;color:#b91c1c;font-family:Tahoma\">نسخة غير مرخّصة.</p>"; return; }
+  installAntiTamper();
   const { ok, bridge } = await runGate();
   if (!ok) return;
   if (bridge) attachBridge(bridge, "fsa");
