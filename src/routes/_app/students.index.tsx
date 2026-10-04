@@ -18,6 +18,8 @@ import { Plus, Trash2, ClipboardPaste, Search, Eye, Pencil, FileSpreadsheet, Arr
 import { useState } from "react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
+import { BatchEntryDialog } from "@/components/batch-entry-dialog";
+import { StudentQuickDialog } from "@/components/student-quick-dialog";
 
 export const Route = createFileRoute("/_app/students/")({ component: StudentsPage });
 
@@ -32,6 +34,7 @@ function StudentsPage() {
   const [confirmOne, setConfirmOne] = useState<any | null>(null);
   const [moveClass, setMoveClass] = useState<string>("");
   const [editing, setEditing] = useState<any | null>(null);
+  const [quick, setQuick] = useState<string | null>(null);
 
   const { data: classes = [] } = useQuery({
     queryKey: ["classes"],
@@ -108,12 +111,14 @@ function StudentsPage() {
 
   return (
     <div className="space-y-6">
+      <StudentQuickDialog studentId={quick} onClose={() => setQuick(null)} />
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-3xl font-bold">الطلاب</h1>
           <p className="text-muted-foreground mt-1">إدارة بيانات الطلاب</p>
         </div>
         <div className="flex gap-2 print:hidden">
+          <BatchEntryDialog />
           <Button variant="outline" onClick={exportExcel} disabled={filtered.length === 0}>
             <FileSpreadsheet className="w-4 h-4 ml-1" /> تصدير Excel
           </Button>
@@ -196,7 +201,7 @@ function StudentsPage() {
                         <Checkbox checked={selected.has(s.id)} onCheckedChange={() => toggleOne(s.id)} aria-label={`تحديد ${s.full_name}`} />
                       </td>
                     )}
-                    <td className="p-3 font-medium">{s.full_name}</td>
+                    <td className="p-3 font-medium"><button className="hover:text-primary hover:underline text-start" onClick={() => setQuick(s.id)}>{s.full_name}</button></td>
                     <td className="p-3 text-muted-foreground">{s.student_number || "—"}</td>
                     <td className="p-3 text-muted-foreground">{s.classes?.name || "—"}</td>
                     <td className="p-3 text-center">

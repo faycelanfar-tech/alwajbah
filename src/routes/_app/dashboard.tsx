@@ -12,6 +12,8 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line, Cell,
 } from "recharts";
 import { CHART_COLORS } from "@/lib/branding";
+import { EarlyWarningCard } from "@/components/early-warning-card";
+import { BatchEntryDialog } from "@/components/batch-entry-dialog";
 
 export const Route = createFileRoute("/_app/dashboard")({ component: Dashboard });
 
@@ -140,8 +142,11 @@ function Dashboard() {
         ))}
       </div>
 
+      <div className="flex justify-end"><BatchEntryDialog /></div>
+
       {!isTeacher && (
         <>
+          <EarlyWarningCard />
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm text-muted-foreground">الفترة:</span>
             {PERIODS.map((p) => (
