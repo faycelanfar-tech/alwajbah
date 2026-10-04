@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, GraduationCap, AlertTriangle, FileBarChart, Settings as SettingsIcon, UserCog, Trophy, ClipboardCheck, History, Sparkles, BookOpen } from "lucide-react";
+import { LayoutDashboard, Users, GraduationCap, AlertTriangle, FileBarChart, Settings as SettingsIcon, UserCog, Trophy, ClipboardCheck, History, Sparkles, BookOpen, Wand2 } from "lucide-react";
 import { READONLY_ROLES } from "@/lib/branding";
 
 const VIEWERS = ["admin", "supervisor", "teacher", ...READONLY_ROLES];
@@ -19,6 +19,7 @@ export const APP_PAGES: AppPage[] = [
   { key: "violations", to: "/violations", label: "المخالفات", icon: AlertTriangle, roles: VIEWERS },
   { key: "actions", to: "/actions", label: "الإجراءات", icon: ClipboardCheck, roles: ["admin", "supervisor", ...READONLY_ROLES] },
   { key: "positive", to: "/positive", label: "متابعة الطلاب", icon: Sparkles, roles: VIEWERS },
+  { key: "tools", to: "/tools", label: "أدوات الصف", icon: Wand2, roles: VIEWERS },
   { key: "academic", to: "/academic", label: "التقرير الأكاديمي", icon: BookOpen, roles: VIEWERS },
   { key: "rewards", to: "/rewards", label: "النقاط والمكافآت", icon: Trophy, roles: ["admin", "teacher"] },
   { key: "students", to: "/students", label: "الطلاب", icon: GraduationCap, roles: ["admin", "supervisor", "teacher"] },
