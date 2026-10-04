@@ -12,7 +12,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ACTION_OPTIONS, CUSTOM_ACTION, isReadOnlyRole } from "@/lib/branding";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { ClipboardCheck, AlertCircle, CheckCircle2, Copy } from "lucide-react";
+import { ClipboardCheck, AlertCircle, CheckCircle2, Copy, Printer } from "lucide-react";
+import { printPledge, type PledgeKind } from "@/lib/pledge-print";
+import { useSettings } from "@/hooks/use-settings";
 
 export const Route = createFileRoute("/_app/actions")({ component: ActionsPage });
 
@@ -132,6 +134,22 @@ function EmptyState({ text }: { text: string }) {
 
 function ViolationCard({ v, readOnly, options = [] }: { v: any; readOnly?: boolean; options?: string[] }) {
   const qc = useQueryClient();
+  const { displayName, settings } = useSettings();
+  const { profile } = useAuth();
+  const doPrint = (kind: PledgeKind) => printPledge({
+    kind, schoolName: displayName, logoUrl: (settings as any).logo_url,
+    studentName: v.students?.full_name || "", className: v.students?.classes?.name,
+    date: v.violation_date, period: v.period, violation: v.violation_types?.name,
+    severity: v.violation_types?.severity, description: v.description,
+    teacherName: v.profiles?.full_name || v.profiles?.username,
+    action: v.action_taken, supervisorName: profile?.full_name || profile?.username,
+  });
+  const printBtns = (
+    <>
+      <Button variant="outline" size="sm" onClick={() => doPrint("pledge")}><Printer className="w-4 h-4 ml-1" /> طباعة تعهد</Button>
+      <Button variant="outline" size="sm" onClick={() => doPrint("referral")}><Printer className="w-4 h-4 ml-1" /> استمارة مخالفة/إحالة</Button>
+    </>
+  );
   const preset = v.action_taken && options.includes(String(v.action_taken).split(" — ")[0])
     ? String(v.action_taken).split(" — ")[0] : (v.action_taken ? CUSTOM_ACTION : "");
   const [action, setAction] = useState<string>(preset);
@@ -213,6 +231,7 @@ function ViolationCard({ v, readOnly, options = [] }: { v: any; readOnly?: boole
           <div className="pt-2 border-t text-sm">
             <span className="text-muted-foreground">الإجراء المتخذ: </span>
             <span className="font-medium break-words">{v.action_taken || "بانتظار إجراء"}</span>
+            <div className="flex gap-2 mt-2 flex-wrap">{printBtns}</div>
           </div>
         ) : (
           <>
@@ -239,6 +258,7 @@ function ViolationCard({ v, readOnly, options = [] }: { v: any; readOnly?: boole
             </div>
 
             <div className="flex justify-end gap-2 flex-wrap">
+              {printBtns}
               <Button variant="ghost" size="sm" onClick={copyAction}><Copy className="w-4 h-4 ml-1" /> نسخ النص</Button>
               {v.action_taken && (
                 <Button variant="outline" onClick={() => clear.mutate()} disabled={clear.isPending}>إلغاء الإجراء</Button>
