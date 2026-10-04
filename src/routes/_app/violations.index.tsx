@@ -1,3 +1,4 @@
+import { BatchEntryDialog } from "@/components/batch-entry-dialog";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { db as supabase } from "@/lib/db";
@@ -157,6 +158,7 @@ function ViolationsPage() {
           <p className="text-muted-foreground mt-1">تسجيل ومتابعة المخالفات</p>
         </div>
         <div className="flex gap-2">
+          <BatchEntryDialog />
           {isAdmin && <ManageTypesDialog types={types} />}
           <AddViolationDialog
             classes={classes}
