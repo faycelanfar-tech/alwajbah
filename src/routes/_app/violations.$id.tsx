@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Printer } from "lucide-react";
+import { printPledge } from "@/lib/pledge-print";
+import { useAuth } from "@/hooks/use-auth";
 import { ROLE_LABELS, SEVERITY_COLORS } from "@/lib/branding";
 
 export const Route = createFileRoute("/_app/violations/$id")({
@@ -33,6 +35,15 @@ const ACTION_LABELS: Record<string, string> = {
 function ViolationDetail() {
   const { id } = Route.useParams();
   const { displayName, settings } = useSettings();
+  const { profile } = useAuth();
+  const { data: teacher } = useQuery({
+    queryKey: ["violation-teacher", id],
+    queryFn: async () => {
+      const { data: vv } = await supabase.from("violations").select("created_by").eq("id", id).maybeSingle();
+      if (!(vv as any)?.created_by) return null;
+      return (await supabase.from("profiles_public").select("full_name, username").eq("id", (vv as any).created_by).maybeSingle()).data as any;
+    },
+  });
 
   const { data: v, isLoading } = useQuery({
     queryKey: ["violation-detail", id],
@@ -81,7 +92,18 @@ function ViolationDetail() {
             <p className="text-muted-foreground mt-1">{(v as any).students?.full_name} — {(v as any).students?.classes?.name || "بدون فصل"}</p>
           </div>
         </div>
-        <Button variant="outline" onClick={() => window.print()}><Printer className="w-4 h-4 ml-1" /> طباعة</Button>
+        <div className="flex gap-2 flex-wrap">
+          {(["pledge", "referral"] as const).map((k) => (
+            <Button key={k} variant="outline" onClick={() => printPledge({
+              kind: k, schoolName: displayName, logoUrl: settings.logo_url,
+              studentName: (v as any).students?.full_name || "", className: (v as any).students?.classes?.name,
+              date: (v as any).violation_date, period: (v as any).period, violation: (v as any).violation_types?.name,
+              severity, description: (v as any).description, teacherName: teacher?.full_name || teacher?.username,
+              action: (v as any).action_taken, supervisorName: profile?.full_name || profile?.username,
+            })}><Printer className="w-4 h-4 ml-1" /> {k === "pledge" ? "طباعة تعهد" : "استمارة مخالفة/إحالة"}</Button>
+          ))}
+          <Button variant="outline" onClick={() => window.print()}><Printer className="w-4 h-4 ml-1" /> طباعة</Button>
+        </div>
       </div>
 
       <div className="hidden print:block text-center border-b pb-3">
