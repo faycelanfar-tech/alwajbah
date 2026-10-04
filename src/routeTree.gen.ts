@@ -14,6 +14,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppToolsRouteImport } from './routes/_app/tools'
 import { Route as AppTeachersRouteImport } from './routes/_app/teachers'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as AppRewardsRouteImport } from './routes/_app/rewards'
@@ -52,6 +53,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AppToolsRoute = AppToolsRouteImport.update({
+  id: '/tools',
+  path: '/tools',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppTeachersRoute = AppTeachersRouteImport.update({
   id: '/teachers',
@@ -139,6 +145,7 @@ export interface FileRoutesByFullPath {
   '/rewards': typeof AppRewardsRoute
   '/settings': typeof AppSettingsRoute
   '/teachers': typeof AppTeachersRoute
+  '/tools': typeof AppToolsRoute
   '/students/$id': typeof AppStudentsIdRoute
   '/violations/$id': typeof AppViolationsIdRoute
   '/students/': typeof AppStudentsIndexRoute
@@ -159,6 +166,7 @@ export interface FileRoutesByTo {
   '/rewards': typeof AppRewardsRoute
   '/settings': typeof AppSettingsRoute
   '/teachers': typeof AppTeachersRoute
+  '/tools': typeof AppToolsRoute
   '/students/$id': typeof AppStudentsIdRoute
   '/violations/$id': typeof AppViolationsIdRoute
   '/students': typeof AppStudentsIndexRoute
@@ -181,6 +189,7 @@ export interface FileRoutesById {
   '/_app/rewards': typeof AppRewardsRoute
   '/_app/settings': typeof AppSettingsRoute
   '/_app/teachers': typeof AppTeachersRoute
+  '/_app/tools': typeof AppToolsRoute
   '/_app/students/$id': typeof AppStudentsIdRoute
   '/_app/violations/$id': typeof AppViolationsIdRoute
   '/_app/students/': typeof AppStudentsIndexRoute
@@ -203,6 +212,7 @@ export interface FileRouteTypes {
     | '/rewards'
     | '/settings'
     | '/teachers'
+    | '/tools'
     | '/students/$id'
     | '/violations/$id'
     | '/students/'
@@ -223,6 +233,7 @@ export interface FileRouteTypes {
     | '/rewards'
     | '/settings'
     | '/teachers'
+    | '/tools'
     | '/students/$id'
     | '/violations/$id'
     | '/students'
@@ -244,6 +255,7 @@ export interface FileRouteTypes {
     | '/_app/rewards'
     | '/_app/settings'
     | '/_app/teachers'
+    | '/_app/tools'
     | '/_app/students/$id'
     | '/_app/violations/$id'
     | '/_app/students/'
@@ -294,6 +306,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_app/tools': {
+      id: '/_app/tools'
+      path: '/tools'
+      fullPath: '/tools'
+      preLoaderRoute: typeof AppToolsRouteImport
+      parentRoute: typeof AppRoute
     }
     '/_app/teachers': {
       id: '/_app/teachers'
@@ -407,6 +426,7 @@ interface AppRouteChildren {
   AppRewardsRoute: typeof AppRewardsRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppTeachersRoute: typeof AppTeachersRoute
+  AppToolsRoute: typeof AppToolsRoute
   AppStudentsIdRoute: typeof AppStudentsIdRoute
   AppViolationsIdRoute: typeof AppViolationsIdRoute
   AppStudentsIndexRoute: typeof AppStudentsIndexRoute
@@ -424,6 +444,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppRewardsRoute: AppRewardsRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppTeachersRoute: AppTeachersRoute,
+  AppToolsRoute: AppToolsRoute,
   AppStudentsIdRoute: AppStudentsIdRoute,
   AppViolationsIdRoute: AppViolationsIdRoute,
   AppStudentsIndexRoute: AppStudentsIndexRoute,
