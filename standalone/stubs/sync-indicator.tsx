@@ -10,7 +10,7 @@ import {
   getSharedPath, setSharedPath, chooseSharedPath, bridgeKind,
 } from "./local-engine";
 
-const POLL_MS = 2000;
+const POLL_MS = 1500;
 
 /** تحديث تلقائي كل 5 ثوانٍ من الملف المشترك + زر تحديث يدوي + ضبط مسار الملف */
 export function SyncIndicator() {
@@ -27,7 +27,8 @@ export function SyncIndicator() {
     return () => { unsub(); window.clearInterval(t); };
   }, [qc]);
 
-  function refreshNow() {
+  async function refreshNow() {
+    try { await (window as any).__awjRefresh?.(); } catch { /* */ }
     if (sharedMode) reloadFromShared(true);
     qc.invalidateQueries();
     setLast(Date.now());
