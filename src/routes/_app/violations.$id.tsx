@@ -99,8 +99,9 @@ function ViolationDetail() {
               studentName: (v as any).students?.full_name || "", className: (v as any).students?.classes?.name,
               date: (v as any).violation_date, period: (v as any).period, violation: (v as any).violation_types?.name,
               severity, description: (v as any).description, teacherName: teacher?.full_name || teacher?.username,
+              studentNumber: (v as any).students?.student_number,
               action: (v as any).action_taken, supervisorName: profile?.full_name || profile?.username,
-            })}><Printer className="w-4 h-4 ml-1" /> {k === "pledge" ? "طباعة تعهد" : "استمارة مخالفة/إحالة"}</Button>
+            })}><Printer className="w-4 h-4 ml-1" /> {k === "pledge" ? "نموذج (1) تعهد طالب" : "نموذج (2) تحويل لمنسق شؤون الطلاب"}</Button>
           ))}
           <Button variant="outline" onClick={() => window.print()}><Printer className="w-4 h-4 ml-1" /> طباعة</Button>
         </div>

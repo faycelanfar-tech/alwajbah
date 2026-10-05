@@ -141,13 +141,14 @@ function ViolationCard({ v, readOnly, options = [] }: { v: any; readOnly?: boole
     studentName: v.students?.full_name || "", className: v.students?.classes?.name,
     date: v.violation_date, period: v.period, violation: v.violation_types?.name,
     severity: v.violation_types?.severity, description: v.description,
+    studentNumber: v.students?.student_number,
     teacherName: v.profiles?.full_name || v.profiles?.username,
     action: v.action_taken, supervisorName: profile?.full_name || profile?.username,
   });
   const printBtns = (
     <>
-      <Button variant="outline" size="sm" onClick={() => doPrint("pledge")}><Printer className="w-4 h-4 ml-1" /> طباعة تعهد</Button>
-      <Button variant="outline" size="sm" onClick={() => doPrint("referral")}><Printer className="w-4 h-4 ml-1" /> استمارة مخالفة/إحالة</Button>
+      <Button variant="outline" size="sm" onClick={() => doPrint("pledge")}><Printer className="w-4 h-4 ml-1" /> نموذج (1) تعهد طالب</Button>
+      <Button variant="outline" size="sm" onClick={() => doPrint("referral")}><Printer className="w-4 h-4 ml-1" /> نموذج (2) تحويل لمنسق شؤون الطلاب</Button>
     </>
   );
   const preset = v.action_taken && options.includes(String(v.action_taken).split(" — ")[0])
