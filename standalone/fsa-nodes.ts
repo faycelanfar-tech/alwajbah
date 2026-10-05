@@ -202,6 +202,7 @@ export async function makeNodesBridge(dir: any): Promise<FileBridge & { refresh(
   };
 
   await refresh();
+  (window as any).__awjRefresh = refresh;
   // أول تشغيل على هذا الجهاز: ننشئ ملفه ليضم كل البيانات المدموجة (بما فيها ملفات التعارض القديمة)
   if (merged && !cache.has(own)) flush();
   window.setInterval(() => { void refresh(); }, POLL_MS);

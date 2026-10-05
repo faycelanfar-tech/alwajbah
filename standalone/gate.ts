@@ -1,9 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /** شاشة التحقق قبل فتح النظام: الترخيص، شبكة المدرسة، ملف البيانات المشترك */
 import {
-  fsaSupported, savedHandle, saveHandle, pickExisting, pickNew, ensurePermission, makeBridge,
-} from "./fsa";
-import { dirSupported, savedDir, saveDir, pickDir, ensureDirPermission, makeDirBridge } from "./fsa-dir";
+  nodesSupported, savedNodesDir, saveNodesDir, pickNodesDir, ensureNodesPermission, makeNodesBridge,
+} from "./fsa-nodes";
 import type { FileBridge } from "./stubs/local-engine";
 
 const ALLOWED_IP_PREFIX = "103.225.74.";
@@ -128,60 +127,40 @@ async function checkNetwork(): Promise<boolean> {
 function chooseFile(): Promise<FileBridge | null> {
   return new Promise((resolve) => {
     const localOnly = { label: "العمل على هذا الجهاز فقط", onClick: () => resolve(null) };
-
-    /* --- المجلد المشترك (صندوق المعاملات) --- */
-    const finishDir = async (d: any) => {
+    const finish = async (d: any) => {
       try {
-        if (!(await ensureDirPermission(d, true))) return;
-        await saveDir(d);
-        screen("جاري فتح المجلد المشترك…", "يتم قراءة بيانات المدرسة ودمج آخر المعاملات.");
-        resolve(await makeDirBridge(d));
+        if (!(await ensureNodesPermission(d, true))) return;
+        await saveNodesDir(d);
+        screen("جاري فتح مجلد النظام…", "يتم قراءة ملفات جميع الأجهزة ودمجها.");
+        resolve(await makeNodesBridge(d));
       } catch (e: any) {
         screen("تعذّر فتح المجلد", `${e?.message ?? "المجلد غير صالح"}`, [{ label: "إعادة المحاولة", primary: true, onClick: () => location.reload() }], true);
       }
     };
-    const pickFolder = async () => { try { await finishDir(await pickDir()); } catch { /* أُلغي */ } };
+    const pick = async () => { try { await finish(await pickNodesDir()); } catch { /* أُلغي */ } };
 
-    /* --- الطريقة القديمة: ملف واحد --- */
-    const finishFile = async (h: any) => {
-      try {
-        if (!(await ensurePermission(h, true))) return;
-        await saveHandle(h);
-        resolve(await makeBridge(h));
-      } catch (e: any) {
-        screen("تعذّر فتح الملف", `${e?.message ?? "الملف غير صالح"}`, [{ label: "إعادة المحاولة", primary: true, onClick: () => location.reload() }], true);
-      }
-    };
-    const pickOpen = async () => { try { await finishFile(await pickExisting()); } catch { /* أُلغي */ } };
-
-    if (!dirSupported && !fsaSupported) {
+    if (!nodesSupported) {
       screen("متصفح غير مدعوم", "لحفظ البيانات في مجلد OneDrive المشترك افتح النظام بمتصفح Microsoft Edge أو Google Chrome.", [localOnly], true);
       return;
     }
     void (async () => {
-      const saved = await savedHandle();
+      const saved = await savedNodesDir();
       if (saved) {
         try {
-          if (await ensurePermission(saved, false)) { await finishFile(saved); return; }
+          if (await ensureNodesPermission(saved, false)) { await finish(saved); return; }
         } catch { /* نطلب من جديد */ }
-        screen("ملف البيانات المشترك", `اضغط «متابعة» للسماح للنظام بالعمل على الملف:<br><b dir="ltr">${saved.name}</b>`, [
-          { label: "متابعة", primary: true, onClick: () => void finishFile(saved) },
-          { label: "اختيار ملف آخر", onClick: pickOpen },
+        screen("مجلد النظام المشترك", `اضغط «متابعة» للسماح للنظام بالعمل على المجلد:<br><b dir="ltr">${saved.name}</b>`, [
+          { label: "متابعة", primary: true, onClick: () => void finish(saved) },
+          { label: "اختيار مجلد آخر", onClick: pick },
           localOnly,
         ]);
         return;
       }
       screen(
-        "ملف البيانات المشترك",
-        `اختر ملف بيانات المدرسة <b>alwajbah-data.awj</b> الموجود في مجلد OneDrive المشترك.`,
-        [
-          { label: "اختيار ملف البيانات", primary: true, onClick: pickOpen },
-          { label: "إنشاء ملف بيانات جديد", onClick: async () => { try { await finishFile(await pickNew()); } catch { /* أُلغي */ } } },
-          ...(dirSupported ? [{ label: "استخدام مجلد مشترك بدلاً من ذلك", onClick: pickFolder }] : []),
-          localOnly,
-        ],
+        "مجلد النظام المشترك",
+        `اختر <b>المجلد</b> الذي يحوي ملف <b>alwajbah-data.awj</b> في OneDrive.<br>سيكتب كل حاسوب في ملف خاص به، وتُدمج بيانات كل الأجهزة (وملفات التعارض القديمة) تلقائياً.`,
+        [{ label: "اختيار مجلد النظام", primary: true, onClick: pick }, localOnly],
       );
-      void savedDir;
     })();
   });
 }
