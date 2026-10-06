@@ -10,6 +10,14 @@ import { printPledge } from "@/lib/pledge-print";
 import { useAuth } from "@/hooks/use-auth";
 import { ROLE_LABELS, SEVERITY_COLORS } from "@/lib/branding";
 
+async function violationOccurrence(v: any): Promise<number | null> {
+  try {
+    if (!v?.student_id) return null;
+    const { data } = await supabase.from("violations").select("id, violation_date, type_id").eq("student_id", v.student_id);
+    return (data ?? []).filter((x: any) => x.type_id === v.type_id && String(x.violation_date) <= String(v.violation_date)).length || 1;
+  } catch { return null; }
+}
+
 export const Route = createFileRoute("/_app/violations/$id")({
   component: ViolationDetail,
   head: () => ({
@@ -50,7 +58,7 @@ function ViolationDetail() {
     queryFn: async () =>
       (await supabase
         .from("violations")
-        .select("*, violation_types(name, severity), students(id, full_name, classes(name, stage))")
+        .select("*, violation_types(name, severity), students(id, full_name, student_number, classes(name, stage))")
         .eq("id", id)
         .maybeSingle()).data,
   });
@@ -94,8 +102,9 @@ function ViolationDetail() {
         </div>
         <div className="flex gap-2 flex-wrap">
           {(["pledge", "referral"] as const).map((k) => (
-            <Button key={k} variant="outline" onClick={() => printPledge({
-              kind: k, schoolName: displayName, logoUrl: settings.logo_url,
+            <Button key={k} variant="outline" onClick={async () => printPledge({
+              kind: k, schoolName: displayName, logoUrl: settings.logo_url, letterheadUrl: (settings as any).letterhead_url,
+              occurrence: await violationOccurrence(v),
               studentName: (v as any).students?.full_name || "", className: (v as any).students?.classes?.name,
               date: (v as any).violation_date, period: (v as any).period, violation: (v as any).violation_types?.name,
               severity, description: (v as any).description, teacherName: teacher?.full_name || teacher?.username,

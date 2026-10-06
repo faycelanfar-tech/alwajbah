@@ -6,6 +6,7 @@ interface Settings {
   school_name: string;
   subtitle: string | null;
   logo_url: string | null;
+  letterhead_url?: string | null;
   footer_text: string | null;
   primary_color: string | null;
 }

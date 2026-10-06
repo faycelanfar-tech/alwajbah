@@ -10,6 +10,7 @@ export function printPledge(opts: {
   kind: PledgeKind;
   schoolName: string;
   logoUrl?: string | null;
+  letterheadUrl?: string | null;
   studentName: string;
   className?: string | null;
   section?: string | null;
@@ -33,7 +34,9 @@ export function printPledge(opts: {
   const actions = String(o.action || "").split(/\s+—\s+|\n/).map((s) => s.trim()).filter(Boolean);
   const title = o.kind === "pledge" ? "تعهد طالب (المشرف الإداري)" : "اثبات واقعة — تحويل إلى منسق شؤون الطلاب";
 
-  const head = `<div class="top">${o.logoUrl ? `<img src="${esc(o.logoUrl)}">` : ""}<div>${esc(o.schoolName)}</div></div>`;
+  const head = o.letterheadUrl
+    ? `<img class="lh" src="${esc(o.letterheadUrl)}">`
+    : `<div class="top">${o.logoUrl ? `<img src="${esc(o.logoUrl)}">` : ""}<div>${esc(o.schoolName)}</div></div>`;
 
   const form1 = `
 <div class="fn">نموذج رقم (1)</div><div class="ft">تعهد طالب (المشرف الإداري)</div>
@@ -99,6 +102,7 @@ ${[0, 1, 2].map((i) => `<tr class="tall"><td class="n">.${i + 1}</td><td>${esc(a
 <style>
 @page{size:A4 portrait;margin:10mm}
 *{box-sizing:border-box}body{font-family:"Times New Roman",Arial,sans-serif;color:#000;margin:0;font-size:14px;font-weight:600}
+.lh{display:block;width:100%;max-height:45mm;object-fit:contain;margin:0 0 6px}
 .top{display:flex;align-items:center;gap:8px;font-size:12px}.top img{width:44px;height:44px;object-fit:contain}
 .fn,.ft{text-align:center;font-weight:800;font-size:17px;margin:4px 0}.ft{margin-bottom:8px}.sub{margin:-4px 0 8px}
 table{width:100%;border-collapse:collapse;margin:0 0 -1.5px}td{border:1.5px solid #000;padding:6px 8px;vertical-align:middle;word-break:break-word}
