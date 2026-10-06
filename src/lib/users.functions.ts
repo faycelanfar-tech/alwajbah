@@ -1,13 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
-import { createClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const USERNAME_DOMAIN = "alwajbah.local";
 
-function admin() {
-  return createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+async function admin(): Promise<any> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  return supabaseAdmin;
 }
 
 async function assertAdmin(context: { supabase: any; userId: string }) {
@@ -22,7 +20,7 @@ async function assertAdmin(context: { supabase: any; userId: string }) {
 
 /** يسجّل عملية على الحسابات في سجل تتبع العمليات */
 async function logAccountActivity(
-  a: ReturnType<typeof admin>,
+  a: any,
   actorId: string,
   action: "created" | "deleted",
   targetId: string,
@@ -78,7 +76,7 @@ export const adminCreateUser = createServerFn({ method: "POST" })
   })
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
-    const a = admin();
+    const a = await admin();
 
     const { data: existing } = await a.from("profiles").select("id").eq("username", data.username).maybeSingle();
     if (existing) throw new Error("اسم المستخدم مستخدم مسبقًا، اختر اسمًا آخر");
@@ -127,7 +125,7 @@ export const adminDeleteUser = createServerFn({ method: "POST" })
     await assertAdmin(context);
     if (data.userId === context.userId) throw new Error("لا يمكنك حذف حسابك الحالي");
 
-    const a = admin();
+    const a = await admin();
     const uid = data.userId;
 
     const { data: target } = await a.from("profiles").select("username, full_name").eq("id", uid).maybeSingle();
