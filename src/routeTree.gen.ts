@@ -9,35 +9,34 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
-import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AppToolsRouteImport } from './routes/_app/tools'
-import { Route as AppTeachersRouteImport } from './routes/_app/teachers'
-import { Route as AppSettingsRouteImport } from './routes/_app/settings'
-import { Route as AppRewardsRouteImport } from './routes/_app/rewards'
-import { Route as AppReportsRouteImport } from './routes/_app/reports'
-import { Route as AppPositiveRouteImport } from './routes/_app/positive'
-import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
-import { Route as AppClassesRouteImport } from './routes/_app/classes'
-import { Route as AppAuditRouteImport } from './routes/_app/audit'
-import { Route as AppActionsRouteImport } from './routes/_app/actions'
+import { Route as AppRouteImport } from './routes/_app'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AppAcademicRouteImport } from './routes/_app/academic'
-import { Route as AppViolationsIndexRouteImport } from './routes/_app/violations.index'
+import { Route as AppActionsRouteImport } from './routes/_app/actions'
+import { Route as AppAuditRouteImport } from './routes/_app/audit'
+import { Route as AppClassesRouteImport } from './routes/_app/classes'
+import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
+import { Route as AppPositiveRouteImport } from './routes/_app/positive'
+import { Route as AppReportsRouteImport } from './routes/_app/reports'
+import { Route as AppRewardsRouteImport } from './routes/_app/rewards'
+import { Route as AppSettingsRouteImport } from './routes/_app/settings'
+import { Route as AppTeachersRouteImport } from './routes/_app/teachers'
+import { Route as AppToolsRouteImport } from './routes/_app/tools'
 import { Route as AppStudentsIndexRouteImport } from './routes/_app/students.index'
-import { Route as AppViolationsIdRouteImport } from './routes/_app/violations.$id'
 import { Route as AppStudentsIdRouteImport } from './routes/_app/students.$id'
+import { Route as AppViolationsIndexRouteImport } from './routes/_app/violations.index'
+import { Route as AppViolationsIdRouteImport } from './routes/_app/violations.$id'
 
-const ResetPasswordRoute = ResetPasswordRouteImport.update({
-  id: '/reset-password',
-  path: '/reset-password',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
+const AppRoute = AppRouteImport.update({
+  id: '/_app',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
@@ -45,58 +44,19 @@ const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
   path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AppRoute = AppRouteImport.update({
-  id: '/_app',
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AppToolsRoute = AppToolsRouteImport.update({
-  id: '/tools',
-  path: '/tools',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppTeachersRoute = AppTeachersRouteImport.update({
-  id: '/teachers',
-  path: '/teachers',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppSettingsRoute = AppSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppRewardsRoute = AppRewardsRouteImport.update({
-  id: '/rewards',
-  path: '/rewards',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppReportsRoute = AppReportsRouteImport.update({
-  id: '/reports',
-  path: '/reports',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppPositiveRoute = AppPositiveRouteImport.update({
-  id: '/positive',
-  path: '/positive',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppDashboardRoute = AppDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppClassesRoute = AppClassesRouteImport.update({
-  id: '/classes',
-  path: '/classes',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppAuditRoute = AppAuditRouteImport.update({
-  id: '/audit',
-  path: '/audit',
+const AppAcademicRoute = AppAcademicRouteImport.update({
+  id: '/academic',
+  path: '/academic',
   getParentRoute: () => AppRoute,
 } as any)
 const AppActionsRoute = AppActionsRouteImport.update({
@@ -104,14 +64,49 @@ const AppActionsRoute = AppActionsRouteImport.update({
   path: '/actions',
   getParentRoute: () => AppRoute,
 } as any)
-const AppAcademicRoute = AppAcademicRouteImport.update({
-  id: '/academic',
-  path: '/academic',
+const AppAuditRoute = AppAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
   getParentRoute: () => AppRoute,
 } as any)
-const AppViolationsIndexRoute = AppViolationsIndexRouteImport.update({
-  id: '/violations/',
-  path: '/violations/',
+const AppClassesRoute = AppClassesRouteImport.update({
+  id: '/classes',
+  path: '/classes',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDashboardRoute = AppDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPositiveRoute = AppPositiveRouteImport.update({
+  id: '/positive',
+  path: '/positive',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppReportsRoute = AppReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppRewardsRoute = AppRewardsRouteImport.update({
+  id: '/rewards',
+  path: '/rewards',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSettingsRoute = AppSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppTeachersRoute = AppTeachersRouteImport.update({
+  id: '/teachers',
+  path: '/teachers',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppToolsRoute = AppToolsRouteImport.update({
+  id: '/tools',
+  path: '/tools',
   getParentRoute: () => AppRoute,
 } as any)
 const AppStudentsIndexRoute = AppStudentsIndexRouteImport.update({
@@ -119,14 +114,19 @@ const AppStudentsIndexRoute = AppStudentsIndexRouteImport.update({
   path: '/students/',
   getParentRoute: () => AppRoute,
 } as any)
-const AppViolationsIdRoute = AppViolationsIdRouteImport.update({
-  id: '/violations/$id',
-  path: '/violations/$id',
-  getParentRoute: () => AppRoute,
-} as any)
 const AppStudentsIdRoute = AppStudentsIdRouteImport.update({
   id: '/students/$id',
   path: '/students/$id',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppViolationsIndexRoute = AppViolationsIndexRouteImport.update({
+  id: '/violations/',
+  path: '/violations/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppViolationsIdRoute = AppViolationsIdRouteImport.update({
+  id: '/violations/$id',
+  path: '/violations/$id',
   getParentRoute: () => AppRoute,
 } as any)
 
@@ -272,25 +272,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/reset-password': {
-      id: '/reset-password'
-      path: '/reset-password'
-      fullPath: '/reset-password'
-      preLoaderRoute: typeof ResetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/forgot-password': {
-      id: '/forgot-password'
-      path: '/forgot-password'
-      fullPath: '/forgot-password'
-      preLoaderRoute: typeof ForgotPasswordRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app': {
@@ -300,74 +286,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_app/tools': {
-      id: '/_app/tools'
-      path: '/tools'
-      fullPath: '/tools'
-      preLoaderRoute: typeof AppToolsRouteImport
-      parentRoute: typeof AppRoute
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_app/teachers': {
-      id: '/_app/teachers'
-      path: '/teachers'
-      fullPath: '/teachers'
-      preLoaderRoute: typeof AppTeachersRouteImport
-      parentRoute: typeof AppRoute
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_app/settings': {
-      id: '/_app/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof AppSettingsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/rewards': {
-      id: '/_app/rewards'
-      path: '/rewards'
-      fullPath: '/rewards'
-      preLoaderRoute: typeof AppRewardsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/reports': {
-      id: '/_app/reports'
-      path: '/reports'
-      fullPath: '/reports'
-      preLoaderRoute: typeof AppReportsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/positive': {
-      id: '/_app/positive'
-      path: '/positive'
-      fullPath: '/positive'
-      preLoaderRoute: typeof AppPositiveRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/dashboard': {
-      id: '/_app/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AppDashboardRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/classes': {
-      id: '/_app/classes'
-      path: '/classes'
-      fullPath: '/classes'
-      preLoaderRoute: typeof AppClassesRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/audit': {
-      id: '/_app/audit'
-      path: '/audit'
-      fullPath: '/audit'
-      preLoaderRoute: typeof AppAuditRouteImport
+    '/_app/academic': {
+      id: '/_app/academic'
+      path: '/academic'
+      fullPath: '/academic'
+      preLoaderRoute: typeof AppAcademicRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/actions': {
@@ -377,18 +321,67 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppActionsRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/academic': {
-      id: '/_app/academic'
-      path: '/academic'
-      fullPath: '/academic'
-      preLoaderRoute: typeof AppAcademicRouteImport
+    '/_app/audit': {
+      id: '/_app/audit'
+      path: '/audit'
+      fullPath: '/audit'
+      preLoaderRoute: typeof AppAuditRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/violations/': {
-      id: '/_app/violations/'
-      path: '/violations'
-      fullPath: '/violations/'
-      preLoaderRoute: typeof AppViolationsIndexRouteImport
+    '/_app/classes': {
+      id: '/_app/classes'
+      path: '/classes'
+      fullPath: '/classes'
+      preLoaderRoute: typeof AppClassesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/dashboard': {
+      id: '/_app/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AppDashboardRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/positive': {
+      id: '/_app/positive'
+      path: '/positive'
+      fullPath: '/positive'
+      preLoaderRoute: typeof AppPositiveRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/reports': {
+      id: '/_app/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof AppReportsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/rewards': {
+      id: '/_app/rewards'
+      path: '/rewards'
+      fullPath: '/rewards'
+      preLoaderRoute: typeof AppRewardsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/settings': {
+      id: '/_app/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AppSettingsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/teachers': {
+      id: '/_app/teachers'
+      path: '/teachers'
+      fullPath: '/teachers'
+      preLoaderRoute: typeof AppTeachersRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/tools': {
+      id: '/_app/tools'
+      path: '/tools'
+      fullPath: '/tools'
+      preLoaderRoute: typeof AppToolsRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/students/': {
@@ -398,18 +391,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppStudentsIndexRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/violations/$id': {
-      id: '/_app/violations/$id'
-      path: '/violations/$id'
-      fullPath: '/violations/$id'
-      preLoaderRoute: typeof AppViolationsIdRouteImport
-      parentRoute: typeof AppRoute
-    }
     '/_app/students/$id': {
       id: '/_app/students/$id'
       path: '/students/$id'
       fullPath: '/students/$id'
       preLoaderRoute: typeof AppStudentsIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/violations/': {
+      id: '/_app/violations/'
+      path: '/violations'
+      fullPath: '/violations/'
+      preLoaderRoute: typeof AppViolationsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/violations/$id': {
+      id: '/_app/violations/$id'
+      path: '/violations/$id'
+      fullPath: '/violations/$id'
+      preLoaderRoute: typeof AppViolationsIdRouteImport
       parentRoute: typeof AppRoute
     }
   }
