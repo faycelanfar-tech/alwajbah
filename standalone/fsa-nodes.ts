@@ -14,7 +14,7 @@ import type { FileBridge } from "./stubs/local-engine";
 
 const store = createStore("alwajbah-fsa", "handles");
 const DIR_KEY = "nodesDir";
-const POLL_MS = 3000;
+const POLL_MS = 2000;
 const WRITE_DELAY = 800;
 const ACC = "__accounts";
 
@@ -142,6 +142,7 @@ export async function makeNodesBridge(dir: any): Promise<FileBridge & { refresh(
   const own = `node-${dev}.awj`;
   const cache = new Map<string, { mtime: number; src: Source | null }>();
   let merged: DB | null = null;
+  let served: DB | null = null; // آخر نسخة قرأها المحرك
   let meta: Meta = emptyMeta();
   let version = 0;
   let sig = "";
@@ -167,7 +168,9 @@ export async function makeNodesBridge(dir: any): Promise<FileBridge & { refresh(
             else { const db = parseDb(text); if (db) src = { db, meta: emptyMeta(), base: f.lastModified }; }
           }
         } catch { /* ملف قيد المزامنة أو تالف */ }
-        cache.set(name, { mtime: f.lastModified, src: src ?? c?.src ?? null });
+        // لا نحفظ وقت التعديل إن فشلت القراءة، لنعيد المحاولة في الدورة التالية
+        if (src) cache.set(name, { mtime: f.lastModified, src });
+        else if (c) cache.set(name, { mtime: -1, src: c.src });
       } catch { /* غير متاح مؤقتاً */ }
     }
     for (const k of [...cache.keys()]) if (!names.includes(k)) cache.delete(k);
@@ -222,14 +225,16 @@ export async function makeNodesBridge(dir: any): Promise<FileBridge & { refresh(
       return null;
     },
     stat: () => (version === 0 ? null : version),
-    read: () => (merged ? JSON.stringify(merged) : null),
+    read: () => { served = merged; return merged ? JSON.stringify(merged) : null; },
     write: (t: string) => {
       const next = parseDb(t);
       if (!next) return false;
       const now = Date.now();
-      meta = stamp(merged ?? { tables: {}, accounts: [] }, next, meta, now);
-      merged = next;
-      sig = JSON.stringify(next);
+      // نقارن بآخر نسخة قرأها المحرك (لا بالنسخة المدموجة الأحدث) حتى لا تُحذف سجلات وصلت من أجهزة أخرى للتو
+      const nm = stamp(served ?? merged ?? { tables: {}, accounts: [] }, next, meta, now);
+      const r = merged ? mergeAll([{ db: merged, meta, base: 0 }, { db: next, meta: nm, base: 0 }]) : { db: next, meta: nm };
+      merged = r.db; meta = r.meta; served = merged;
+      sig = JSON.stringify(merged);
       version++;
       if (pending) window.clearTimeout(pending);
       pending = window.setTimeout(() => { pending = null; flush(); }, WRITE_DELAY);
