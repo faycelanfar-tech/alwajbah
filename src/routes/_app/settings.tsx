@@ -34,12 +34,27 @@ function SettingsPage() {
         school_name: form.school_name,
         subtitle: form.subtitle,
         logo_url: form.logo_url,
+        letterhead_url: (form as any).letterhead_url ?? null,
       }).eq("id", 1);
       if (error) throw error;
       toast.success("تم حفظ الإعدادات");
       await refresh();
     } catch (e: any) { toast.error(e.message); }
     finally { setSaving(false); }
+  }
+
+  async function uploadLetterhead(file: File) {
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `letterhead-${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from("logos").upload(path, file, { upsert: true });
+      if (error) throw error;
+      const { data } = supabase.storage.from("logos").getPublicUrl(path);
+      setForm({ ...form, letterhead_url: data.publicUrl } as any);
+      toast.success("تم رفع الترويسة — لا تنس الحفظ");
+    } catch (e: any) { toast.error(e.message); }
+    finally { setUploading(false); }
   }
 
   async function uploadLogo(file: File) {
@@ -86,6 +101,23 @@ function SettingsPage() {
                 </div>
               </label>
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>ترويسة الطباعة (صورة عرضية تظهر أعلى صفحة A4 في النماذج)</Label>
+            <p className="text-xs text-muted-foreground">يُفضّل صورة عرضها كامل الصفحة، مثل 2480×400 بكسل، وفيها الشعار واسم المدرسة والوزارة.</p>
+            {(form as any).letterhead_url && (
+              <div className="space-y-2">
+                <img src={(form as any).letterhead_url} alt="الترويسة" className="w-full max-h-40 object-contain border rounded-lg bg-background" />
+                <Button variant="outline" size="sm" onClick={() => setForm({ ...form, letterhead_url: null } as any)}>إزالة الترويسة</Button>
+              </div>
+            )}
+            <label className="block">
+              <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadLetterhead(f); }} />
+              <div className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:bg-secondary/50 transition-colors">
+                <Upload className="w-5 h-5 mx-auto text-muted-foreground" /><p className="text-sm text-muted-foreground mt-2">اختر صورة الترويسة</p>
+              </div>
+            </label>
           </div>
 
           <Button onClick={save} disabled={saving} size="lg" className="w-full">

@@ -165,6 +165,7 @@ export type Database = {
         Row: {
           footer_text: string | null
           id: number
+          letterhead_url: string | null
           logo_url: string | null
           primary_color: string | null
           school_name: string
@@ -174,6 +175,7 @@ export type Database = {
         Insert: {
           footer_text?: string | null
           id?: number
+          letterhead_url?: string | null
           logo_url?: string | null
           primary_color?: string | null
           school_name?: string
@@ -183,6 +185,7 @@ export type Database = {
         Update: {
           footer_text?: string | null
           id?: number
+          letterhead_url?: string | null
           logo_url?: string | null
           primary_color?: string | null
           school_name?: string

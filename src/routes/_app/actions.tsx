@@ -47,7 +47,7 @@ function ActionsPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("violations")
-        .select("*, students(full_name, class_id, classes(name)), violation_types(name, severity)")
+        .select("*, students(full_name, student_number, class_id, classes(name)), violation_types(name, severity)")
         .order("created_at", { ascending: false });
       const list = data ?? [];
       const ids = Array.from(new Set(list.map((v: any) => v.created_by).filter(Boolean)));
@@ -132,12 +132,21 @@ function EmptyState({ text }: { text: string }) {
   return <p className="text-center text-muted-foreground py-12">{text}</p>;
 }
 
+async function violationOccurrence(v: any): Promise<number | null> {
+  try {
+    if (!v?.student_id) return null;
+    const { data } = await supabase.from("violations").select("id, violation_date, type_id").eq("student_id", v.student_id);
+    return (data ?? []).filter((x: any) => x.type_id === v.type_id && String(x.violation_date) <= String(v.violation_date)).length || 1;
+  } catch { return null; }
+}
+
 function ViolationCard({ v, readOnly, options = [] }: { v: any; readOnly?: boolean; options?: string[] }) {
   const qc = useQueryClient();
   const { displayName, settings } = useSettings();
   const { profile } = useAuth();
-  const doPrint = (kind: PledgeKind) => printPledge({
-    kind, schoolName: displayName, logoUrl: (settings as any).logo_url,
+  const doPrint = async (kind: PledgeKind) => printPledge({
+    kind, schoolName: displayName, logoUrl: (settings as any).logo_url, letterheadUrl: (settings as any).letterhead_url,
+    occurrence: await violationOccurrence(v),
     studentName: v.students?.full_name || "", className: v.students?.classes?.name,
     date: v.violation_date, period: v.period, violation: v.violation_types?.name,
     severity: v.violation_types?.severity, description: v.description,
