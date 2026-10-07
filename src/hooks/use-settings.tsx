@@ -7,6 +7,8 @@ interface Settings {
   subtitle: string | null;
   logo_url: string | null;
   letterhead_url?: string | null;
+  footer_url?: string | null;
+  print_show_identity?: boolean | null;
   footer_text: string | null;
   primary_color: string | null;
 }
