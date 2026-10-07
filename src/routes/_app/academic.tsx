@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ACADEMIC_LEVELS, LEVEL_STYLES, CHART_COLORS, isReadOnlyRole } from "@/lib/branding";
+import { brandTop, brandBottom, showIdentity } from "@/lib/print-branding";
 import { buildAcademicPrintHtml, captureCharts, downloadHtml, printHtml, esc } from "@/lib/academic-print";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { PasteScoresDialog } from "@/components/paste-scores-dialog";
@@ -419,8 +420,8 @@ function MonthlyReport({ month, setMonth, classId, setClassId, classes, subjects
     }).join("");
     return buildAcademicPrintHtml({
       title: "التقرير الأكاديمي والسلوكي الشهري",
-      schoolName: settings?.school_name,
-      logoUrl: settings?.logo_url,
+      brandTop: brandTop(settings as any),
+      brandBottom: brandBottom(settings as any),
       subtitle: `الشهر: ${month}${className ? ` — الصف: ${className}` : ""} — عدد الطلاب: ${students.length}`,
       columnCount: subjects.length + 3,
       chartsHtml: captureCharts(areaRef.current),
@@ -457,8 +458,9 @@ function MonthlyReport({ month, setMonth, classId, setClassId, classes, subjects
       <Card className="border-0 shadow-card">
         <CardContent className="p-5 space-y-4">
           <div className="text-center border-b pb-3">
-            {settings?.logo_url && <img src={settings.logo_url} alt="شعار المدرسة" className="w-16 h-16 mx-auto object-contain mb-2" />}
-            <h2 className="text-xl font-bold">{settings?.school_name || ""}</h2>
+            {(settings as any)?.letterhead_url && <img src={(settings as any).letterhead_url} alt="" className="w-full max-h-40 object-contain mb-2" />}
+            {showIdentity(settings as any) && settings?.logo_url && <img src={settings.logo_url} alt="شعار المدرسة" className="w-16 h-16 mx-auto object-contain mb-2" />}
+            {showIdentity(settings as any) && <h2 className="text-xl font-bold">{settings?.school_name || ""}</h2>}
             <p className="text-sm text-muted-foreground">التقرير الأكاديمي والسلوكي الشهري — {month} {className && `— ${className}`}</p>
           </div>
 
@@ -613,8 +615,8 @@ function CombinedReport({ month, setMonth, classId, setClassId, classes, subject
     const cols = subjects.length + 5;
     return buildAcademicPrintHtml({
       title: "التقرير الشهري الموحّد (أكاديمي وسلوكي)",
-      schoolName: settings?.school_name,
-      logoUrl: settings?.logo_url,
+      brandTop: brandTop(settings as any),
+      brandBottom: brandBottom(settings as any),
       subtitle: `الشهر: ${month}${className ? ` — الصف: ${className}` : ""} — عدد الطلاب: ${perStudent.length}`,
       columnCount: cols,
       chartsHtml: captureCharts(areaRef.current),
@@ -658,8 +660,9 @@ function CombinedReport({ month, setMonth, classId, setClassId, classes, subject
       <Card className="border-0 shadow-card">
         <CardContent className="p-5 space-y-4">
           <div className="text-center border-b pb-3">
-            {settings?.logo_url && <img src={settings.logo_url} alt="شعار المدرسة" className="w-16 h-16 mx-auto object-contain mb-2" />}
-            <h2 className="text-xl font-bold">{settings?.school_name || ""}</h2>
+            {(settings as any)?.letterhead_url && <img src={(settings as any).letterhead_url} alt="" className="w-full max-h-40 object-contain mb-2" />}
+            {showIdentity(settings as any) && settings?.logo_url && <img src={settings.logo_url} alt="شعار المدرسة" className="w-16 h-16 mx-auto object-contain mb-2" />}
+            {showIdentity(settings as any) && <h2 className="text-xl font-bold">{settings?.school_name || ""}</h2>}
             <p className="text-sm text-muted-foreground">التقرير الشهري الأكاديمي والسلوكي — {month} {className && `— ${className}`}</p>
           </div>
 

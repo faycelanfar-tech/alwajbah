@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Printer, TrendingDown, TrendingUp, Award, AlertTriangle } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, Legend } from "recharts";
+import { brandTop, brandBottom } from "@/lib/print-branding";
 import { useSettings } from "@/hooks/use-settings";
 import { useMemo } from "react";
 
@@ -167,11 +168,10 @@ function StudentProfile() {
       footer { margin-top:20px; text-align:center; color:#666; font-size:11px; border-top:1px solid #ddd; padding-top:8px;}
       * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     </style></head><body>
+      ${brandTop(settings as any)}
       <header>
-        ${settings.logo_url ? `<img src="${esc(settings.logo_url)}" />` : ""}
         <div>
-          <h1>${esc(displayName)}</h1>
-          <div>التقرير الشامل للطالب</div>
+          <h1>التقرير الشامل للطالب</h1>
         </div>
       </header>
       <div class="meta">
@@ -195,6 +195,7 @@ function StudentProfile() {
         ? `<table><thead><tr><th>المادة</th>${months.map((m) => `<th>${esc(m)}</th>`).join("")}</tr></thead><tbody>${acadRows}</tbody></table>`
         : `<p style="font-size:12px;color:#666">لا يوجد رصد أكاديمي لهذا الطالب</p>`}
       <footer>تاريخ التقرير: ${new Date().toLocaleDateString("ar-EG")}</footer>
+      ${brandBottom(settings as any)}
       <script>window.onload=()=>setTimeout(()=>window.print(),400)<\/script>
     </body></html>`;
 
