@@ -1,5 +1,23 @@
 // طباعة النماذج الرسمية: نموذج (1) تعهد طالب — نموذج (2) إثبات واقعة وتحويل لمنسق شؤون الطلاب
-export type PledgeKind = "pledge" | "referral";
+import { db } from "@/lib/db";
+export type PledgeKind = "pledge" | "referral" | "teacher";
+
+/** عدد مرات «التنبيه الشفهي» المسجّلة للطالب في الإجراءات */
+export async function verbalWarningCount(studentId?: string | null): Promise<number | null> {
+  try {
+    if (!studentId) return null;
+    const { data } = await db.from("violations").select("action_taken").eq("student_id", studentId);
+    return (data ?? []).filter((x: any) => /تنبيه\s*شفهي/.test(String(x.action_taken || ""))).length;
+  } catch { return null; }
+}
+
+/** فصل «سادس 4» إلى الصف «سادس» والشعبة «4» */
+export function splitClass(name?: string | null, section?: string | null) {
+  const n = String(name || "").trim();
+  if (section) return { grade: n, section: String(section) };
+  const m = n.match(/^(.*?)[\s\-/]*(\d+)$/);
+  return m && m[1].trim() ? { grade: m[1].trim(), section: m[2] } : { grade: n, section: "" };
+}
 
 const esc = (s: unknown) =>
   String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
@@ -11,6 +29,9 @@ export function printPledge(opts: {
   schoolName: string;
   logoUrl?: string | null;
   letterheadUrl?: string | null;
+  footerUrl?: string | null;
+  showIdentity?: boolean | null;
+  verbalWarnings?: number | null;
   studentName: string;
   className?: string | null;
   section?: string | null;
@@ -30,13 +51,16 @@ export function printPledge(opts: {
   const day = isNaN(d.getTime()) ? "" : DAYS[d.getDay()];
   const dateStr = o.date || new Date().toISOString().slice(0, 10);
   const digits = String(o.studentNumber || "").replace(/\s/g, "").slice(0, 11).split("");
-  const idCells = Array.from({ length: 11 }, (_, i) => `<td class="dg">${esc(digits[i] || "")}</td>`).join("");
+  const idCells = `<td class="ids-wrap"><table class="ids" dir="ltr"><tr>${Array.from({ length: 11 }, (_, i) => `<td class="dg">${esc(digits[i] || "")}</td>`).join("")}</tr></table></td>`;
+  const cls = splitClass(o.className, o.section);
   const actions = String(o.action || "").split(/\s+—\s+|\n/).map((s) => s.trim()).filter(Boolean);
-  const title = o.kind === "pledge" ? "تعهد طالب (المشرف الإداري)" : "اثبات واقعة — تحويل إلى منسق شؤون الطلاب";
+  const title = o.kind === "pledge" ? "تعهد طالب (المشرف الإداري)" : o.kind === "teacher" ? "تحويل طالب من المعلم إلى المشرف الإداري" : "اثبات واقعة — تحويل إلى منسق شؤون الطلاب";
 
-  const head = o.letterheadUrl
-    ? `<img class="lh" src="${esc(o.letterheadUrl)}">`
-    : `<div class="top">${o.logoUrl ? `<img src="${esc(o.logoUrl)}">` : ""}<div>${esc(o.schoolName)}</div></div>`;
+  const head = (o.letterheadUrl ? `<img class="lh" src="${esc(o.letterheadUrl)}">` : "")
+    + (o.showIdentity ? `<div class="top">${o.logoUrl ? `<img src="${esc(o.logoUrl)}">` : ""}<div>${esc(o.schoolName)}</div></div>` : "");
+  const foot = o.footerUrl ? `<img class="fo" src="${esc(o.footerUrl)}">` : "";
+  const studentRows = `<tr><td class="g">اسم الطالب</td><td colspan="3">${esc(o.studentName)}</td></tr>
+<tr><td class="g">الصف</td><td>${esc(cls.grade)}</td><td class="g w">الشعبة</td><td class="c">${esc(cls.section)}</td></tr>`;
 
   const form1 = `
 <div class="fn">نموذج رقم (1)</div><div class="ft">تعهد طالب (المشرف الإداري)</div>
@@ -53,8 +77,7 @@ export function printPledge(opts: {
 <table>
 <tr><td class="g w">اليوم</td><td>${esc(day)}</td><td class="g w">التاريخ</td><td>${esc(dateStr)}</td></tr>
 <tr><td class="g c" colspan="4"><b>بيانات الطالب</b></td></tr>
-<tr><td class="g">اسم الطالب</td><td colspan="3">${esc(o.studentName)}</td></tr>
-<tr><td class="g">الصف</td><td>${esc(o.className || "")}</td><td class="g">الشعبة</td><td>${esc(o.section || "")}</td></tr>
+${studentRows}
 </table>
 <table><tr><td class="g w">الرقم الشخصي</td>${idCells}</tr></table>
 <table>
@@ -75,8 +98,7 @@ ${[0, 1, 2].map((i) => `<tr class="tall"><td class="n">.${i + 1}</td><td>${esc(a
 <table>
 <tr><td class="g w">اليوم</td><td>${esc(day)}</td><td class="g w">التاريخ</td><td>${esc(dateStr)}</td></tr>
 <tr><td class="g c" colspan="4"><b>بيانات الطالب:</b></td></tr>
-<tr><td class="g">اسم الطالب</td><td colspan="3">${esc(o.studentName)}</td></tr>
-<tr><td class="g">الصف</td><td>${esc(o.className || "")}</td><td class="g">الشعبة</td><td>${esc(o.section || "")}</td></tr>
+${studentRows}
 </table>
 <table><tr><td class="g w">الرقم الشخصي</td>${idCells}</tr></table>
 <table>
@@ -98,19 +120,50 @@ ${[0, 1, 2].map((i) => `<tr class="tall"><td class="n">.${i + 1}</td><td>${esc(a
 <tr class="tall"><td></td><td></td><td></td></tr>
 </table>`;
 
+  const form3 = `
+<div class="fn">نموذج رقم (3)</div><div class="ft">تحويل طالب من المعلم إلى المشرف الإداري</div>
+<table>
+<tr><td class="g w">اليوم</td><td>${esc(day)}</td><td class="g w">التاريخ</td><td>${esc(dateStr)}</td></tr>
+<tr><td class="g c" colspan="4"><b>بيانات الطالب</b></td></tr>
+${studentRows}
+</table>
+<table><tr><td class="g w">الرقم الشخصي</td>${idCells}</tr></table>
+<table>
+<tr><td class="g c" colspan="8"><b>بيانات المخالفة</b></td></tr>
+<tr><td class="g">نوع المخالفة</td><td>${esc(o.violation || "")}</td><td class="g">درجة المخالفة</td><td class="c">${esc(o.severity ?? "")}</td>
+<td class="g">المخالفة للمرة ( ${esc(o.occurrence ?? "  ")} )</td><td class="g">تاريخ المخالفة</td><td colspan="2">${esc(o.date || "")}</td></tr>
+<tr class="big"><td class="g">وصف المخالفة</td><td colspan="7">${esc(o.description || "")}${o.period ? `<div class="sm">الحصة ${esc(o.period)}</div>` : ""}</td></tr>
+</table>
+<table>
+<tr><td class="g c" colspan="4"><b>التنبيهات الشفهية السابقة من المعلم — عدد المرات: ( ${esc(o.verbalWarnings ?? "    ")} )</b></td></tr>
+<tr><td class="g c n">م</td><td class="g c">التاريخ</td><td class="g c">الحصة</td><td class="g c">سبب التنبيه الشفهي</td></tr>
+${[1, 2, 3].map((i) => `<tr class="tall"><td class="c">${i}</td><td></td><td></td><td></td></tr>`).join("")}
+</table>
+<table>
+<tr><td colspan="3" class="txt">أُقرّ أنا المعلم: <b>${esc(o.teacherName || "")}</b> بأنني قمت بتنبيه الطالب المذكور شفهياً وفق ما هو موضّح أعلاه، ولم يلتزم الطالب، وعليه أحيله إلى المشرف الإداري لاتخاذ الإجراء المناسب حسب سياسة إدارة سلوك الطلبة 2026.</td></tr>
+<tr><td class="g c">توقيع المعلم المحيل</td><td class="g c">توقيع المشرف الإداري المستلم</td><td class="g c">توقيع الطالب</td></tr>
+<tr><td class="c sm">${esc(o.teacherName || "")}</td><td class="c sm">${esc(o.supervisorName || "")}</td><td class="c sm">${esc(o.studentName)}</td></tr>
+<tr class="tall"><td></td><td></td><td></td></tr>
+</table>
+<table>
+<tr><td class="g c"><b>الإجراء المتخذ من المشرف الإداري</b></td></tr>
+<tr class="big"><td>${esc(o.action || "")}</td></tr>
+</table>`;
+
   const html = `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>${title} - ${esc(o.studentName)}</title>
 <style>
 @page{size:A4 portrait;margin:10mm}
-*{box-sizing:border-box}body{font-family:"Times New Roman",Arial,sans-serif;color:#000;margin:0;font-size:14px;font-weight:600}
+*{box-sizing:border-box}body{font-family:"Times New Roman",Arial,sans-serif;color:#000;margin:0;font-size:13.5px;font-weight:600}
 .lh{display:block;width:100%;max-height:45mm;object-fit:contain;margin:0 0 6px}
 .top{display:flex;align-items:center;gap:8px;font-size:12px}.top img{width:44px;height:44px;object-fit:contain}
 .fn,.ft{text-align:center;font-weight:800;font-size:17px;margin:4px 0}.ft{margin-bottom:8px}.sub{margin:-4px 0 8px}
-table{width:100%;border-collapse:collapse;margin:0 0 -1.5px}td{border:1.5px solid #000;padding:6px 8px;vertical-align:middle;word-break:break-word}
+table{width:100%;border-collapse:collapse;margin:0 0 -1.5px}td{border:1.5px solid #000;padding:5px 7px;vertical-align:middle;word-break:break-word}
 .g{background:#f0f0f0}.c{text-align:center}.w{width:18%}.n{width:12%;text-align:center}.dg{text-align:center;width:6.5%}
-.tall td{height:40px}.big td{height:90px;vertical-align:top}.big td.g{vertical-align:middle;width:18%}
+.tall td{height:36px}.ids-wrap{padding:0}.ids{margin:0;border:none}.ids td{border:none;border-left:1.5px solid #000;height:34px}.ids td:first-child{border-left:none}
+.fo{display:block;width:100%;max-height:28mm;object-fit:contain;margin-top:10px}.big td{height:90px;vertical-align:top}.big td.g{vertical-align:middle;width:18%}
 .txt{line-height:2}.sm{font-size:12px;margin-top:6px;font-weight:400}
 .note{font-size:12px;margin-top:6px}.dots{border-bottom:2px dotted #000;margin:22px 10%;}
-</style></head><body>${head}${o.kind === "pledge" ? form1 : form2}
+</style></head><body>${head}${o.kind === "pledge" ? form1 : o.kind === "teacher" ? form3 : form2}${foot}
 <script>window.onload=()=>setTimeout(()=>window.print(),300)</script>
 </body></html>`;
 

@@ -5,6 +5,7 @@ import * as XLSX from "xlsx";
 import { Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { db as supabase } from "@/lib/db";
 import { useAuth } from "@/hooks/use-auth";
+import { brandTop, brandBottom } from "@/lib/print-branding";
 import { useSettings } from "@/hooks/use-settings";
 import { captureCharts, esc, printHtml } from "@/lib/academic-print";
 import { Button } from "@/components/ui/button";
@@ -286,8 +287,9 @@ tr.top3 td { background:#fff7ed; font-weight:700; }
 .chart h3 { margin:0 0 4px; font-size:12px; text-align:center; color:#1d4ed8; }
 .chart svg { width:100% !important; height:auto !important; max-height:220px; }
 </style></head><body>
-<header>${settings.logo_url ? `<img src="${esc(settings.logo_url)}" />` : ""}
-<div><h1>${esc(displayName)} — تقرير متابعة الطلاب</h1>
+${brandTop(settings as any)}
+<header>
+<div><h1>تقرير متابعة الطلاب</h1>
 <div class="meta">المعلم: ${esc(teacherName)} · الشعبة: ${esc(selectedClass?.name ?? "")} · الشهر: ${esc(label)} · تاريخ الطباعة: ${new Date().toLocaleDateString("ar-EG")}</div></div>
 </header>
 ${charts ? `<div class="charts">${charts}</div>` : ""}
@@ -303,6 +305,7 @@ ${reportRows
   )
   .join("")}
 </tbody></table>
+${brandBottom(settings as any)}
 <script>window.onload=()=>{setTimeout(()=>window.print(),350)}<\/script>
 </body></html>`;
   }

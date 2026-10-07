@@ -40,8 +40,8 @@ export function fitSizes(columnCount: number) {
 
 interface PrintOptions {
   title: string;
-  schoolName?: string | null;
-  logoUrl?: string | null;
+  brandTop?: string;
+  brandBottom?: string;
   subtitle?: string;
   columnCount: number;
   chartsHtml?: string;
@@ -76,9 +76,8 @@ export function buildAcademicPrintHtml(o: PrintOptions, autoPrint: boolean) {
   .tag { display: inline-block; padding: 1px 5px; border-radius: 5px; border: 1px solid; font-size: ${s.font - 0.5}px; }
   .footer { margin-top: 12px; text-align: center; font-size: 10px; color: #777; border-top: 1px solid #e5e7eb; padding-top: 6px; }
 </style></head><body>
+${o.brandTop ?? ""}
 <div class="header">
-  ${o.logoUrl ? `<img src="${esc(o.logoUrl)}" alt="شعار المدرسة" style="height:56px;object-fit:contain;margin-bottom:4px" />` : ""}
-  ${o.schoolName ? `<h1>${esc(o.schoolName)}</h1>` : ""}
   <p><b>${esc(o.title)}</b></p>
   ${o.subtitle ? `<p>${esc(o.subtitle)}</p>` : ""}
 </div>
@@ -86,6 +85,7 @@ ${o.legendHtml ? `<div class="legend">${o.legendHtml}</div>` : ""}
 ${o.chartsHtml ? `<div class="charts">${o.chartsHtml}</div>` : ""}
 ${o.tableHtml}
 <div class="footer">${new Date().toLocaleDateString("ar-EG")}</div>
+${o.brandBottom ?? ""}
 ${autoPrint ? `<script>window.onload=function(){setTimeout(function(){window.print()},350)}<\/script>` : ""}
 </body></html>`;
 }

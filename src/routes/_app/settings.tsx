@@ -35,12 +35,28 @@ function SettingsPage() {
         subtitle: form.subtitle,
         logo_url: form.logo_url,
         letterhead_url: (form as any).letterhead_url ?? null,
+        footer_url: (form as any).footer_url ?? null,
+        print_show_identity: !!(form as any).print_show_identity,
       }).eq("id", 1);
       if (error) throw error;
       toast.success("تم حفظ الإعدادات");
       await refresh();
     } catch (e: any) { toast.error(e.message); }
     finally { setSaving(false); }
+  }
+
+  async function uploadFooter(file: File) {
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `footer-${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from("logos").upload(path, file, { upsert: true });
+      if (error) throw error;
+      const { data } = supabase.storage.from("logos").getPublicUrl(path);
+      setForm({ ...form, footer_url: data.publicUrl } as any);
+      toast.success("تم رفع الفوتر — لا تنس الحفظ");
+    } catch (e: any) { toast.error(e.message); }
+    finally { setUploading(false); }
   }
 
   async function uploadLetterhead(file: File) {
@@ -119,6 +135,27 @@ function SettingsPage() {
               </div>
             </label>
           </div>
+
+          <div className="space-y-2">
+            <Label>فوتر الطباعة (صورة عرضية تظهر أسفل التقارير والنماذج)</Label>
+            {(form as any).footer_url && (
+              <div className="space-y-2">
+                <img src={(form as any).footer_url} alt="الفوتر" className="w-full max-h-32 object-contain border rounded-lg bg-background" />
+                <Button variant="outline" size="sm" onClick={() => setForm({ ...form, footer_url: null } as any)}>إزالة الفوتر</Button>
+              </div>
+            )}
+            <label className="block">
+              <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadFooter(f); }} />
+              <div className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:bg-secondary/50 transition-colors">
+                <Upload className="w-5 h-5 mx-auto text-muted-foreground" /><p className="text-sm text-muted-foreground mt-2">اختر صورة الفوتر</p>
+              </div>
+            </label>
+          </div>
+
+          <label className="flex items-start gap-3 p-3 rounded-lg border cursor-pointer">
+            <input type="checkbox" className="mt-1 w-4 h-4" checked={!!(form as any).print_show_identity} onChange={(e) => setForm({ ...form, print_show_identity: e.target.checked } as any)} />
+            <span className="text-sm"><b>إظهار اسم المدرسة والشعار في التقارير المطبوعة</b><br /><span className="text-muted-foreground">عند الإلغاء تظهر صورتا الهيدر والفوتر فقط دون أي اسم أو شعار إضافي.</span></span>
+          </label>
 
           <Button onClick={save} disabled={saving} size="lg" className="w-full">
             {saving && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
