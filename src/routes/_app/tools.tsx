@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Shuffle, Users, Award, CalendarDays, Plus, Minus, Printer, RotateCcw } from "lucide-react";
+import { Shuffle, Users, Award, CalendarDays, Plus, Minus, Printer, RotateCcw, Timer, MessageSquareWarning, Play, Pause, Trash2 } from "lucide-react";
 import { esc, printHtml } from "@/lib/academic-print";
 
 export const Route = createFileRoute("/_app/tools")({
@@ -76,11 +76,15 @@ function ToolsPage() {
           <TabsTrigger value="wheel"><Shuffle className="w-4 h-4 ml-1" /> اختيار عشوائي</TabsTrigger>
           <TabsTrigger value="groups"><Users className="w-4 h-4 ml-1" /> نقاط المجموعات</TabsTrigger>
           <TabsTrigger value="certs"><Award className="w-4 h-4 ml-1" /> شهادات التقدير</TabsTrigger>
+          <TabsTrigger value="timer"><Timer className="w-4 h-4 ml-1" /> مؤقت الحصة</TabsTrigger>
+          <TabsTrigger value="warnings"><MessageSquareWarning className="w-4 h-4 ml-1" /> التنبيهات الشفهية</TabsTrigger>
           <TabsTrigger value="weekly"><CalendarDays className="w-4 h-4 ml-1" /> الملخص الأسبوعي</TabsTrigger>
         </TabsList>
         <TabsContent value="wheel" className="mt-4"><Wheel classId={classId} /></TabsContent>
         <TabsContent value="groups" className="mt-4"><Groups classId={classId} /></TabsContent>
         <TabsContent value="certs" className="mt-4"><Certificates classId={classId} /></TabsContent>
+        <TabsContent value="timer" className="mt-4"><ClassTimer /></TabsContent>
+        <TabsContent value="warnings" className="mt-4"><VerbalWarnings classId={classId} /></TabsContent>
         <TabsContent value="weekly" className="mt-4"><Weekly /></TabsContent>
       </Tabs>
     </div>
@@ -177,35 +181,62 @@ function Groups({ classId }: { classId: string }) {
 
 function Certificates({ classId }: { classId: string }) {
   const { data: students = [] } = useStudents(classId);
-  const { displayName, settings } = useSettings();
-  const { profile } = useAuth();
+  const { settings } = useSettings();
+  const { profile, user } = useAuth();
+  const { data: subjects = [] } = useQuery({
+    queryKey: ["tools-my-subjects", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data: all } = await supabase.from("subjects").select("id, name").order("sort_order");
+      const { data: ts } = await supabase.from("teacher_subjects").select("subject_id").eq("user_id", user!.id);
+      const ids = (ts ?? []).map((r: any) => r.subject_id);
+      const mine = (all ?? []).filter((s: any) => ids.includes(s.id));
+      return (mine.length ? mine : all ?? []) as any[];
+    },
+  });
+  const [subject, setSubject] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
-  const [reason, setReason] = useState("لتميّزه في الانضباط والسلوك الحسن والمشاركة الفعّالة");
+  const [reason, setReason] = useState("تفوّقه وجهده المتميز والتزامه الأكاديمي");
   useEffect(() => setSelected([]), [classId]);
+  useEffect(() => { if (!subject && subjects.length) setSubject(subjects[0].name); }, [subjects, subject]);
   if (!classId) return <NeedClass />;
   function print() {
     const names = students.filter((s) => selected.includes(s.id)).map((s) => s.full_name);
-    const date = new Date().toLocaleDateString("ar-EG-u-nu-latn");
-    const pages = names.map((n) => `<div class="cert">
-      ${settings.logo_url ? `<img src="${esc(settings.logo_url)}">` : ""}
-      <h2>${esc(displayName)}</h2><h1>شهادة شكر وتقدير</h1>
-      <p>تتقدم إدارة المدرسة بخالص الشكر والتقدير للطالب</p>
-      <div class="name">${esc(n)}</div><p>${esc(reason)}</p><p>متمنين له دوام التوفيق والنجاح</p>
-      <div class="sig"><div>المعلم<br>${esc(profile?.full_name || "")}<br>........................</div><div>مدير المدرسة<br><br>........................</div></div>
-      <small>${date}</small></div>`).join("");
-    printHtml(`<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>شهادات تقدير</title><style>
-      @page{size:A4 landscape;margin:10mm}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-      body{margin:0;font-family:'Segoe UI',Tahoma,Arial,sans-serif}
-      .cert{height:185mm;border:10px double #b8860b;padding:20px 40px;text-align:center;page-break-after:always;box-sizing:border-box}
-      .cert img{height:70px}h1{font-size:40px;color:#b8860b;margin:6px 0}h2{margin:4px 0;color:#1d4ed8}
-      p{font-size:20px;margin:8px 0}.name{font-size:36px;font-weight:700;border-bottom:2px dotted #333;display:inline-block;padding:4px 40px;margin:10px}
-      .sig{display:flex;justify-content:space-around;margin-top:24px;font-size:16px}small{color:#666}
+    const school = (settings.school_name || "").trim();
+    const subj = esc(subject || "........");
+    const pages = names.map((n) => `<div class="cert"><div class="inner">
+      <div class="bsm">بِسمِ اللهِ الرَّحمَٰنِ الرَّحِيم</div>
+      <div class="min">وزارة التربية والتعليم والتعليم العالي</div>
+      ${school ? `<div class="min">${esc(school)}</div>` : ""}
+      <h1>شهادة تقدير وتكريم</h1>
+      <p>تُقدّم إدارة المدرسة ومعلّم مادة <b>${subj}</b> بخالص الشُّكرِ والتقديرِ للطالب:</p>
+      <div class="name">${esc(n)}</div>
+      <p>وذلك نظير ${esc(reason)} وتألّقه الملحوظ خلال الفصل الدراسي في مادة <b>${subj}</b>،<br>متمنّين له دوام التوفيق والنجاح ومزيداً من العطاء.</p>
+      <div class="sig"><div>التاريخ: ____/____/${new Date().getFullYear()} م</div><div>معلّم المادة<br><b>${esc(profile?.full_name || "")}</b><br>.......................</div></div>
+    </div></div>`).join("");
+    printHtml(`<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"><title>شهادات تقدير - ${subj}</title><style>
+      @page{size:A4 landscape;margin:8mm}*{-webkit-print-color-adjust:exact;print-color-adjust:exact;box-sizing:border-box}
+      body{margin:0;font-family:'Traditional Arabic','Amiri','Times New Roman',serif;color:#1f2937}
+      .cert{height:192mm;padding:9px;border:14px solid #1e3a5f;outline:4px solid #b8860b;outline-offset:-22px;background:#fbf7ee;page-break-after:always}
+      .inner{height:100%;border:3px double #b8860b;padding:14px 50px;text-align:center;display:flex;flex-direction:column;justify-content:center}
+      .bsm{font-size:22px}.min{font-size:21px;font-weight:700;margin:2px 0}
+      h1{font-size:58px;color:#b8860b;margin:8px 0 12px;font-weight:800;text-shadow:1px 1px 0 #7a5a12}
+      p{font-size:22px;margin:6px 0;line-height:1.7}
+      .name{font-size:34px;font-weight:800;color:#7f1d1d;border-bottom:3px double #b8860b;display:inline-block;padding:2px 60px;margin:6px auto 10px}
+      .sig{display:flex;justify-content:space-between;align-items:flex-end;margin-top:22px;font-size:20px;padding:0 30px}
     </style></head><body>${pages}<script>window.onload=()=>setTimeout(()=>print(),300)<\/script></body></html>`);
   }
   return (
     <Card className="border-0 shadow-card">
       <CardContent className="p-4 space-y-4">
-        <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="سبب التكريم" />
+        <div className="grid sm:grid-cols-2 gap-2">
+          <Select value={subject} onValueChange={setSubject}>
+            <SelectTrigger><SelectValue placeholder="اسم المادة" /></SelectTrigger>
+            <SelectContent>{subjects.map((s: any) => <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)}</SelectContent>
+          </Select>
+          <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="وذلك نظير ..." />
+        </div>
+        <p className="text-xs text-muted-foreground">تصدر الشهادة باسم المادة ويوقّعها معلّم المادة فقط.</p>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => setSelected(students.map((s) => s.id))}>تحديد الكل</Button>
           <Button variant="outline" size="sm" onClick={() => setSelected([])}>إلغاء التحديد</Button>
@@ -221,6 +252,104 @@ function Certificates({ classId }: { classId: string }) {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function ClassTimer() {
+  const [total, setTotal] = useState(300);
+  const [left, setLeft] = useState(300);
+  const [running, setRunning] = useState(false);
+  useEffect(() => {
+    if (!running) return;
+    const t = setInterval(() => setLeft((l) => {
+      if (l <= 1) {
+        setRunning(false);
+        try {
+          const ctx = new AudioContext(); const o = ctx.createOscillator(); o.frequency.value = 880;
+          o.connect(ctx.destination); o.start(); setTimeout(() => { o.stop(); ctx.close(); }, 900);
+        } catch { /* لا صوت */ }
+        return 0;
+      }
+      return l - 1;
+    }), 1000);
+    return () => clearInterval(t);
+  }, [running]);
+  const set = (s: number) => { setTotal(s); setLeft(s); setRunning(false); };
+  const mm = String(Math.floor(left / 60)).padStart(2, "0"), ss = String(left % 60).padStart(2, "0");
+  const pct = total ? (left / total) * 100 : 0;
+  return (
+    <Card className="border-0 shadow-card">
+      <CardContent className="p-8 text-center space-y-6">
+        <div className="flex justify-center gap-2 flex-wrap">
+          {[1, 3, 5, 10, 15, 20].map((m) => <Button key={m} variant={total === m * 60 ? "default" : "outline"} size="sm" onClick={() => set(m * 60)}>{m} د</Button>)}
+        </div>
+        <div className={`text-7xl font-bold tabular-nums ${left === 0 ? "text-destructive" : "text-primary"}`} dir="ltr">{mm}:{ss}</div>
+        <div className="h-3 rounded-full bg-secondary overflow-hidden"><div className="h-full bg-primary transition-all" style={{ width: `${pct}%` }} /></div>
+        <div className="flex justify-center gap-2">
+          <Button size="lg" onClick={() => setRunning((r) => !r)} disabled={left === 0}>{running ? <><Pause className="w-5 h-5 ml-1" /> إيقاف مؤقت</> : <><Play className="w-5 h-5 ml-1" /> ابدأ</>}</Button>
+          <Button size="lg" variant="outline" onClick={() => set(total)}><RotateCcw className="w-4 h-4 ml-1" /> إعادة</Button>
+        </div>
+        <p className="text-sm text-muted-foreground">يصدر تنبيه صوتي عند انتهاء الوقت — مناسب للأنشطة والمسابقات والعمل الجماعي.</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+type Warn = { id: string; student: string; date: string; reason: string };
+function VerbalWarnings({ classId }: { classId: string }) {
+  const { data: students = [] } = useStudents(classId);
+  const key = `awj-warnings-${classId}`;
+  const [list, setList] = useState<Warn[]>([]);
+  const [student, setStudent] = useState("");
+  const [reason, setReason] = useState("");
+  useEffect(() => {
+    if (!classId) return;
+    try { setList(JSON.parse(localStorage.getItem(key) || "[]")); } catch { setList([]); }
+  }, [classId]);
+  if (!classId) return <NeedClass />;
+  const save = (l: Warn[]) => { setList(l); localStorage.setItem(key, JSON.stringify(l)); };
+  const add = () => {
+    if (!student) return;
+    save([{ id: String(Date.now()), student, date: new Date().toISOString().slice(0, 10), reason: reason.trim() }, ...list]);
+    setReason("");
+  };
+  const counts: Record<string, number> = {};
+  list.forEach((w) => { counts[w.student] = (counts[w.student] || 0) + 1; });
+  return (
+    <div className="space-y-4">
+      <Card className="border-0 shadow-card">
+        <CardContent className="p-4 space-y-3">
+          <div className="grid sm:grid-cols-[1fr_2fr_auto] gap-2">
+            <Select value={student} onValueChange={setStudent}>
+              <SelectTrigger><SelectValue placeholder="اختر الطالب" /></SelectTrigger>
+              <SelectContent>{students.map((s) => <SelectItem key={s.id} value={s.full_name}>{s.full_name}</SelectItem>)}</SelectContent>
+            </Select>
+            <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="سبب التنبيه (اختياري)" />
+            <Button onClick={add} disabled={!student}><Plus className="w-4 h-4 ml-1" /> تسجيل تنبيه</Button>
+          </div>
+          <p className="text-xs text-muted-foreground">سجل خاص بهذا الجهاز لتوثيق التنبيهات الشفهية قبل تحويل الطالب للمشرف (نموذج 3). يظهر تحذير عند 3 تنبيهات.</p>
+        </CardContent>
+      </Card>
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
+        {Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([n, c]) => (
+          <div key={n} className={`flex justify-between items-center p-3 rounded-lg border ${c >= 3 ? "border-destructive bg-destructive/10" : "bg-secondary/40"}`}>
+            <span className="font-medium">{n}</span><span className="font-bold">{c} {c >= 3 ? "— يُحوَّل للمشرف" : ""}</span>
+          </div>
+        ))}
+      </div>
+      <Card className="border-0 shadow-card">
+        <CardHeader><CardTitle className="text-base">السجل</CardTitle></CardHeader>
+        <CardContent className="space-y-1">
+          {list.length === 0 && <p className="text-sm text-muted-foreground">لا توجد تنبيهات</p>}
+          {list.map((w) => (
+            <div key={w.id} className="flex items-center justify-between gap-2 border-b last:border-0 py-1 text-sm">
+              <span><b>{w.student}</b> — {w.date}{w.reason ? ` — ${w.reason}` : ""}</span>
+              <Button size="icon" variant="ghost" onClick={() => save(list.filter((x) => x.id !== w.id))}><Trash2 className="w-4 h-4" /></Button>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 

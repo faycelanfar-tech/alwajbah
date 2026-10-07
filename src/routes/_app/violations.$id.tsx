@@ -119,8 +119,9 @@ function ViolationDetail() {
       </div>
 
       <div className="hidden print:block text-center border-b pb-3">
-        {settings.logo_url && <img src={settings.logo_url} alt="شعار المدرسة" className="w-16 h-16 mx-auto object-contain mb-2" />}
-        <h2 className="text-xl font-bold">{displayName}</h2>
+        {(settings as any).letterhead_url && <img src={(settings as any).letterhead_url} alt="" className="w-full max-h-40 object-contain mb-2" />}
+        {(settings as any).print_show_identity && settings.logo_url && <img src={settings.logo_url} alt="شعار المدرسة" className="w-16 h-16 mx-auto object-contain mb-2" />}
+        {(settings as any).print_show_identity && <h2 className="text-xl font-bold">{displayName}</h2>}
         <p className="text-sm">بطاقة مخالفة سلوكية</p>
       </div>
 
