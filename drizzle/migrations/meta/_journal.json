@@ -43,6 +43,13 @@
       "when": 1791252603878,
       "tag": "0005_letterhead",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791339521278,
+      "tag": "0006_print_footer",
+      "breakpoints": true
     }
   ]
 }

@@ -164,30 +164,36 @@ export type Database = {
       app_settings: {
         Row: {
           footer_text: string | null
+          footer_url: string | null
           id: number
           letterhead_url: string | null
           logo_url: string | null
           primary_color: string | null
+          print_show_identity: boolean
           school_name: string
           subtitle: string | null
           updated_at: string
         }
         Insert: {
           footer_text?: string | null
+          footer_url?: string | null
           id?: number
           letterhead_url?: string | null
           logo_url?: string | null
           primary_color?: string | null
+          print_show_identity?: boolean
           school_name?: string
           subtitle?: string | null
           updated_at?: string
         }
         Update: {
           footer_text?: string | null
+          footer_url?: string | null
           id?: number
           letterhead_url?: string | null
           logo_url?: string | null
           primary_color?: string | null
+          print_show_identity?: boolean
           school_name?: string
           subtitle?: string | null
           updated_at?: string
