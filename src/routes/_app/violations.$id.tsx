@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Printer } from "lucide-react";
-import { printPledge } from "@/lib/pledge-print";
+import { printPledge, verbalWarningCount } from "@/lib/pledge-print";
 import { useAuth } from "@/hooks/use-auth";
 import { ROLE_LABELS, SEVERITY_COLORS } from "@/lib/branding";
 
@@ -101,16 +101,18 @@ function ViolationDetail() {
           </div>
         </div>
         <div className="flex gap-2 flex-wrap">
-          {(["pledge", "referral"] as const).map((k) => (
+          {(["pledge", "referral", "teacher"] as const).map((k) => (
             <Button key={k} variant="outline" onClick={async () => printPledge({
               kind: k, schoolName: displayName, logoUrl: settings.logo_url, letterheadUrl: (settings as any).letterhead_url,
+              footerUrl: (settings as any).footer_url, showIdentity: (settings as any).print_show_identity,
+              verbalWarnings: k === "teacher" ? await verbalWarningCount((v as any).student_id) : null,
               occurrence: await violationOccurrence(v),
               studentName: (v as any).students?.full_name || "", className: (v as any).students?.classes?.name,
               date: (v as any).violation_date, period: (v as any).period, violation: (v as any).violation_types?.name,
               severity, description: (v as any).description, teacherName: teacher?.full_name || teacher?.username,
               studentNumber: (v as any).students?.student_number,
               action: (v as any).action_taken, supervisorName: profile?.full_name || profile?.username,
-            })}><Printer className="w-4 h-4 ml-1" /> {k === "pledge" ? "نموذج (1) تعهد طالب" : "نموذج (2) تحويل لمنسق شؤون الطلاب"}</Button>
+            })}><Printer className="w-4 h-4 ml-1" /> {k === "pledge" ? "نموذج (1) تعهد طالب" : k === "teacher" ? "نموذج (3) تحويل من المعلم" : "نموذج (2) تحويل لمنسق شؤون الطلاب"}</Button>
           ))}
           <Button variant="outline" onClick={() => window.print()}><Printer className="w-4 h-4 ml-1" /> طباعة</Button>
         </div>

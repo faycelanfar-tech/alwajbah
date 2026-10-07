@@ -13,7 +13,7 @@ import { ACTION_OPTIONS, CUSTOM_ACTION, isReadOnlyRole } from "@/lib/branding";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ClipboardCheck, AlertCircle, CheckCircle2, Copy, Printer } from "lucide-react";
-import { printPledge, type PledgeKind } from "@/lib/pledge-print";
+import { printPledge, verbalWarningCount, type PledgeKind } from "@/lib/pledge-print";
 import { useSettings } from "@/hooks/use-settings";
 
 export const Route = createFileRoute("/_app/actions")({ component: ActionsPage });
@@ -146,6 +146,8 @@ function ViolationCard({ v, readOnly, options = [] }: { v: any; readOnly?: boole
   const { profile } = useAuth();
   const doPrint = async (kind: PledgeKind) => printPledge({
     kind, schoolName: displayName, logoUrl: (settings as any).logo_url, letterheadUrl: (settings as any).letterhead_url,
+    footerUrl: (settings as any).footer_url, showIdentity: (settings as any).print_show_identity,
+    verbalWarnings: kind === "teacher" ? await verbalWarningCount(v.student_id) : null,
     occurrence: await violationOccurrence(v),
     studentName: v.students?.full_name || "", className: v.students?.classes?.name,
     date: v.violation_date, period: v.period, violation: v.violation_types?.name,
@@ -158,6 +160,7 @@ function ViolationCard({ v, readOnly, options = [] }: { v: any; readOnly?: boole
     <>
       <Button variant="outline" size="sm" onClick={() => doPrint("pledge")}><Printer className="w-4 h-4 ml-1" /> نموذج (1) تعهد طالب</Button>
       <Button variant="outline" size="sm" onClick={() => doPrint("referral")}><Printer className="w-4 h-4 ml-1" /> نموذج (2) تحويل لمنسق شؤون الطلاب</Button>
+      <Button variant="outline" size="sm" onClick={() => doPrint("teacher")}><Printer className="w-4 h-4 ml-1" /> نموذج (3) تحويل من المعلم</Button>
     </>
   );
   const preset = v.action_taken && options.includes(String(v.action_taken).split(" — ")[0])
