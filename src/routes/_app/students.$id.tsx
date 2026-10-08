@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Printer, TrendingDown, TrendingUp, Award, AlertTriangle } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, Legend } from "recharts";
 import { brandTop, brandBottom } from "@/lib/print-branding";
+import { printHtml } from "@/lib/academic-print";
 import { useSettings } from "@/hooks/use-settings";
 import { useMemo } from "react";
 

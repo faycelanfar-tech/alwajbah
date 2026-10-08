@@ -54,9 +54,11 @@ export function ParticipationPanel() {
     queryKey: ["followup-classes", user?.id, isAdmin],
     enabled: !!user?.id,
     queryFn: async () => {
-      if (isAdmin) return (await supabase.from("classes").select("id, name").order("name")).data ?? [];
-      const { data } = await supabase.from("teacher_classes").select("class_id, classes(id, name)").eq("user_id", user!.id);
-      return (data ?? []).map((r: any) => r.classes).filter(Boolean).sort((a: any, b: any) => a.name.localeCompare(b.name, "ar"));
+      const all = ((await supabase.from("classes").select("id, name").order("name")).data ?? []) as any[];
+      if (isAdmin) return all;
+      const { data } = await supabase.from("teacher_classes").select("class_id").eq("user_id", user!.id);
+      const ids = new Set((data ?? []).map((r: any) => r.class_id));
+      return all.filter((c) => ids.has(c.id)).sort((a: any, b: any) => a.name.localeCompare(b.name, "ar"));
     },
   });
 
