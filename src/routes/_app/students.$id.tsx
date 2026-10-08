@@ -199,8 +199,7 @@ function StudentProfile() {
       <script>window.onload=()=>setTimeout(()=>window.print(),400)<\/script>
     </body></html>`;
 
-    const w = window.open("", "_blank");
-    if (w) { w.document.open(); w.document.write(html); w.document.close(); }
+    printHtml(html);
   }
 
 

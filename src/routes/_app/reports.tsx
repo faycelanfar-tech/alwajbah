@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { db as supabase } from "@/lib/db";
 import { brandTop, brandBottom } from "@/lib/print-branding";
+import { printHtml } from "@/lib/academic-print";
 import { useSettings } from "@/hooks/use-settings";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -363,10 +364,7 @@ function ReportsPage() {
   }
 
   function exportPDF() {
-    const w = window.open("", "_blank");
-    if (!w) return;
-    const html = buildReportHtml(true);
-    w.document.open(); w.document.write(html); w.document.close();
+    printHtml(buildReportHtml(true));
   }
 
   function downloadReport() {
@@ -892,9 +890,7 @@ function AcademicReportSection() {
   }
 
   function printAcademic() {
-    const w = window.open("", "_blank");
-    if (!w) return;
-    w.document.open(); w.document.write(buildHtml(true)); w.document.close();
+    printHtml(buildHtml(true));
   }
   function downloadAcademic() {
     const blob = new Blob([buildHtml(false)], { type: "text/html;charset=utf-8" });

@@ -90,13 +90,48 @@ ${autoPrint ? `<script>window.onload=function(){setTimeout(function(){window.pri
 </body></html>`;
 }
 
-/** الطباعة من نافذة about:blank حتى لا يظهر رابط الموقع في تذييل الورقة */
+/**
+ * طباعة مباشرة عبر إطار مخفي داخل الصفحة: تُفتح نافذة الطابعة فوراً
+ * بعد تحميل الصور، دون نوافذ منبثقة ودون الحاجة لحفظ PDF أولاً.
+ */
 export function printHtml(html: string) {
-  const w = window.open("", "_blank");
-  if (!w) return;
-  w.document.open();
-  w.document.write(html);
-  w.document.close();
+  const clean = html.replace(/<script[\s\S]*?<\/script>/gi, "");
+  document.querySelectorAll("iframe[data-print-frame]").forEach((f) => f.remove());
+  const f = document.createElement("iframe");
+  f.setAttribute("data-print-frame", "1");
+  f.setAttribute("aria-hidden", "true");
+  f.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden";
+  document.body.appendChild(f);
+  const doc = f.contentDocument || f.contentWindow?.document;
+  if (!doc) return;
+  doc.open();
+  doc.write(clean);
+  doc.close();
+  let done = false;
+  const go = () => {
+    if (done) return;
+    done = true;
+    try {
+      f.contentWindow?.focus();
+      f.contentWindow?.print();
+    } catch {
+      const w = window.open("", "_blank");
+      if (w) { w.document.write(clean); w.document.close(); w.focus(); w.print(); }
+    }
+    setTimeout(() => f.remove(), 60000);
+  };
+  const imgs = Array.from(doc.images);
+  const pending = imgs.filter((i) => !i.complete);
+  if (!pending.length) setTimeout(go, 250);
+  else {
+    let left = pending.length;
+    pending.forEach((i) => {
+      const fin = () => { if (--left <= 0) setTimeout(go, 150); };
+      i.addEventListener("load", fin);
+      i.addEventListener("error", fin);
+    });
+    setTimeout(go, 4000);
+  }
 }
 
 export function downloadHtml(html: string, filename: string) {
