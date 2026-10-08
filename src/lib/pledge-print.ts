@@ -1,5 +1,6 @@
 // طباعة النماذج الرسمية: نموذج (1) تعهد طالب — نموذج (2) إثبات واقعة وتحويل لمنسق شؤون الطلاب
 import { db } from "@/lib/db";
+import { printHtml } from "@/lib/academic-print";
 export type PledgeKind = "pledge" | "referral" | "teacher";
 
 /** عدد مرات «التنبيه الشفهي» المسجّلة للطالب في الإجراءات */
@@ -167,11 +168,5 @@ table{width:100%;border-collapse:collapse;margin:0 0 -1.5px}td{border:1.5px soli
 <script>window.onload=()=>setTimeout(()=>window.print(),300)</script>
 </body></html>`;
 
-  const w = window.open("", "_blank");
-  if (w) { w.document.open(); w.document.write(html); w.document.close(); return; }
-  const f = document.createElement("iframe");
-  f.style.cssText = "position:fixed;width:0;height:0;border:0";
-  document.body.appendChild(f);
-  f.contentDocument!.open(); f.contentDocument!.write(html.replace(/<script>.*<\/script>/, "")); f.contentDocument!.close();
-  setTimeout(() => { f.contentWindow!.print(); setTimeout(() => f.remove(), 2000); }, 400);
+  printHtml(html);
 }
