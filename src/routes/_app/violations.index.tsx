@@ -1,3 +1,4 @@
+import { fetchVisibleClasses } from "@/lib/my-classes";
 import { BatchEntryDialog } from "@/components/batch-entry-dialog";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -84,10 +85,8 @@ function ViolationsPage() {
   });
 
   const { data: classes = [] } = useQuery({
-    queryKey: ["classes"],
-    queryFn: async () =>
-      (await supabase.from("classes").select("id, name").order("name")).data ??
-      [],
+    queryKey: ["my-classes", user?.id, role],
+    queryFn: () => fetchVisibleClasses(role, user?.id, "id, name"),
   });
 
   const { data: students = [] } = useQuery({
