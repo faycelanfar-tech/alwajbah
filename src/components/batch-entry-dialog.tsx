@@ -1,3 +1,4 @@
+import { fetchVisibleClasses } from "@/lib/my-classes";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";

@@ -1,3 +1,4 @@
+import { fetchVisibleClasses } from "@/lib/my-classes";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { db as supabase } from "@/lib/db";
@@ -34,7 +35,7 @@ function RewardsPage() {
   });
   const { data: classes = [] } = useQuery({
     queryKey: ["my-classes", user?.id, role],
-    queryFn: () => fetchVisibleClasses(role, user?.id, "id, name"),
+    queryFn: async (): Promise<any[]> => fetchVisibleClasses(role, user?.id, "id, name"),
   });
   const { data: studentPoints = [] } = useQuery({
     queryKey: ["student_points"],

@@ -1,3 +1,4 @@
+import { fetchVisibleClasses } from "@/lib/my-classes";
 import { BatchEntryDialog } from "@/components/batch-entry-dialog";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
