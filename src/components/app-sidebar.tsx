@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useSettings } from "@/hooks/use-settings";
 import { usePagePermissions } from "@/hooks/use-page-permissions";
 import { LogOut } from "lucide-react";
-import wabsLogo from "@/assets/wabs-logo.jpg.asset.json";
+import wabsLogo from "@/assets/masar-logo.png.asset.json";
 import { cn } from "@/lib/utils";
 import { ROLE_LABELS, SITE_OWNER_LABEL } from "@/lib/branding";
 
@@ -19,7 +19,7 @@ export function AppSidebar() {
     <aside className="hidden lg:flex flex-col w-64 bg-sidebar border-l border-sidebar-border h-screen sticky top-0">
       <div className="p-6 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
-          <img src={wabsLogo.url} alt="شعار W-ABS" className="w-10 h-10 rounded-full object-cover" />
+          <img src={wabsLogo.url} alt="شعار مسار" className="w-10 h-10 rounded-full object-cover" />
           <div className="min-w-0">
             <p className="font-bold text-sm truncate">{displayName}</p>
             <p className="text-xs text-sidebar-foreground/60 truncate">{settings.subtitle}</p>

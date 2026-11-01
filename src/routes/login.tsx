@@ -14,10 +14,10 @@ import { DEVELOPER_CREDIT } from "@/lib/branding";
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
-      { title: "تسجيل الدخول | نظام إدارة المخالفات" },
-      { name: "description", content: "تسجيل دخول المدير والمعلمين والمشرفين إلى نظام إدارة المخالفات المدرسية." },
-      { property: "og:title", content: "تسجيل الدخول | نظام إدارة المخالفات" },
-      { property: "og:description", content: "الدخول الآمن إلى نظام إدارة المخالفات المدرسية." },
+      { title: "تسجيل الدخول | مسار" },
+      { name: "description", content: "تسجيل دخول المدير والمعلمين والمشرفين إلى نظام مسار للمتابعة الأكاديمية والسلوكية." },
+      { property: "og:title", content: "تسجيل الدخول | مسار" },
+      { property: "og:description", content: "الدخول الآمن إلى نظام مسار للمتابعة الأكاديمية والسلوكية." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
