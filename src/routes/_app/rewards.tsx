@@ -25,7 +25,7 @@ function weekStart(d = new Date()) {
 }
 
 function RewardsPage() {
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const isAdmin = role === "admin";
 
   const { data: students = [] } = useQuery({
@@ -33,8 +33,8 @@ function RewardsPage() {
     queryFn: async () => (await supabase.from("students").select("id, full_name, class_id, classes(name)").order("full_name")).data ?? [],
   });
   const { data: classes = [] } = useQuery({
-    queryKey: ["classes"],
-    queryFn: async () => (await supabase.from("classes").select("id, name").order("name")).data ?? [],
+    queryKey: ["my-classes", user?.id, role],
+    queryFn: () => fetchVisibleClasses(role, user?.id, "id, name"),
   });
   const { data: studentPoints = [] } = useQuery({
     queryKey: ["student_points"],

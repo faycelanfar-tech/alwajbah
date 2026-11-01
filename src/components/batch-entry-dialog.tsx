@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Users } from "lucide-react";
 
 export function BatchEntryDialog() {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [kind, setKind] = useState<"pos" | "neg">("pos");
@@ -22,7 +22,7 @@ export function BatchEntryDialog() {
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [sel, setSel] = useState<Set<string>>(new Set());
 
-  const { data: classes = [] } = useQuery({ queryKey: ["classes"], enabled: open, queryFn: async () => (await supabase.from("classes").select("*").order("name")).data ?? [] });
+  const { data: classes = [] } = useQuery({ queryKey: ["my-classes", user?.id, role], enabled: open, queryFn: () => fetchVisibleClasses(role, user?.id) });
   const { data: students = [] } = useQuery({ queryKey: ["students"], enabled: open, queryFn: async () => (await supabase.from("students").select("*, classes(name)").order("full_name")).data ?? [] });
   const { data: posTypes = [] } = useQuery({ queryKey: ["positive-types"], enabled: open, queryFn: async () => (await supabase.from("positive_behavior_types").select("*").order("name")).data ?? [] });
   const { data: negTypes = [] } = useQuery({ queryKey: ["violation-types"], enabled: open, queryFn: async () => (await supabase.from("violation_types").select("*").order("name")).data ?? [] });
