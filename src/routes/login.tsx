@@ -1,12 +1,12 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState, useEffect, FormEvent } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { useSettings } from "@/hooks/use-settings";
+import masarLogo from "@/assets/masar-logo.png.asset.json";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, Lock, Loader2, School } from "lucide-react";
+import { User, Lock, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { DEVELOPER_CREDIT } from "@/lib/branding";
 
@@ -27,7 +27,6 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
   const { signIn, user, loading } = useAuth();
-  const { settings, displayName } = useSettings();
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -59,15 +58,9 @@ function LoginPage() {
     <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8 text-white">
-          {settings.logo_url ? (
-            <img src={settings.logo_url} alt="شعار" className="mx-auto w-24 h-24 rounded-full bg-white p-2 object-contain shadow-elegant" />
-          ) : (
-            <div className="mx-auto w-24 h-24 rounded-full bg-white/10 backdrop-blur flex items-center justify-center shadow-elegant">
-              <School className="w-12 h-12" />
-            </div>
-          )}
-          <h1 className="mt-5 text-3xl font-bold">{displayName}</h1>
-          <p className="mt-2 text-white/80">{settings.subtitle}</p>
+          <img src={masarLogo.url} alt="شعار مسار" className="mx-auto w-40 h-auto rounded-2xl bg-white p-3 object-contain shadow-elegant" />
+          <h1 className="mt-5 text-4xl font-bold tracking-[0.3em]">مــســار</h1>
+          <p className="mt-2 text-white/85">نظام المتابعة الأكاديمية والسلوكية</p>
         </div>
 
         <Card className="shadow-elegant border-0">

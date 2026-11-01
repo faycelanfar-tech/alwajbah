@@ -1,5 +1,4 @@
 import wabsLogo from "@/assets/masar-logo.png.asset.json";
-import { useSettings } from "@/hooks/use-settings";
 import { NotificationsBell } from "@/components/notifications-bell";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ChangePasswordDialog } from "@/components/change-password-dialog";
@@ -10,7 +9,6 @@ import { SITE_OWNER_LABEL } from "@/lib/branding";
 import { useAuth } from "@/hooks/use-auth";
 
 export function AppHeader() {
-  const { settings, displayName } = useSettings();
   const { role, profile, isOwner } = useAuth();
   return (
     <header className="sticky top-0 z-40 bg-card/85 backdrop-blur border-b">
