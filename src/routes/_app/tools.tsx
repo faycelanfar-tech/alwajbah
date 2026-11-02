@@ -301,11 +301,12 @@ type Warn = { id: string; student: string; date: string; time?: string; reason: 
 function VerbalWarnings({ classId }: { classId: string }) {
   const { data: students = [] } = useStudents(classId);
   const { displayName, settings } = useSettings();
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const key = `awj-warnings-${classId}`;
   const [list, setList] = useState<Warn[]>([]);
   const [student, setStudent] = useState("");
   const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState("");
   useEffect(() => {
     if (!classId) return;
     try { setList(JSON.parse(localStorage.getItem(key) || "[]")); } catch { setList([]); }
@@ -331,6 +332,22 @@ function VerbalWarnings({ classId }: { classId: string }) {
       date: localDate(), violation: "تكرار التنبيهات الشفهية", teacherName: profile?.full_name || profile?.username,
     });
   };
+  const convert = async (name: string) => {
+    const st: any = students.find((s: any) => s.full_name === name);
+    if (!st || !user) return;
+    const ws = list.filter((w) => w.student === name).slice().reverse();
+    if (!confirm(`تحويل ${ws.length} تنبيهات للطالب ${name} إلى مخالفة ترسل للمشرف؟`)) return;
+    setBusy(name);
+    const desc = "تكرار التنبيهات الشفهية (" + ws.length + "):\n" + ws.map((w, i) => `${i + 1}) ${w.date}${w.time ? " الساعة " + w.time : ""}${w.reason ? " — " + w.reason : ""}`).join("\n");
+    const { error } = await supabase.from("violations").insert({
+      student_id: st.id, type_id: null, description: desc, action_taken: null,
+      violation_date: localDate(), created_by: user.id,
+    });
+    setBusy("");
+    if (error) { alert("تعذر التحويل: " + error.message); return; }
+    save(list.filter((w) => w.student !== name));
+    alert("تم تحويل التنبيهات إلى مخالفة، وهي الآن بانتظار إجراء المشرف في صفحة الإجراءات.");
+  };
   return (
     <div className="space-y-4">
       <Card className="border-0 shadow-card">
@@ -348,8 +365,14 @@ function VerbalWarnings({ classId }: { classId: string }) {
       </Card>
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
         {Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([n, c]) => (
-          <div key={n} className={`flex justify-between items-center p-3 rounded-lg border ${c >= 3 ? "border-destructive bg-destructive/10" : "bg-secondary/40"}`}>
-            <span className="font-medium">{n}</span><span className="flex items-center gap-2"><span className="font-bold">{c} {c >= 3 ? "— يُحوَّل للمشرف" : ""}</span>{c >= 3 && <Button size="sm" onClick={() => printReferral(n)}><Printer className="w-4 h-4 ml-1" /> طباعة التحويل</Button>}</span>
+          <div key={n} className={`p-3 rounded-lg border space-y-2 ${c >= 3 ? "border-destructive bg-destructive/10" : "bg-secondary/40"}`}>
+            <div className="flex justify-between items-center"><span className="font-medium">{n}</span><span className="font-bold">{c} تنبيه</span></div>
+            {c >= 3 && (
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" variant="destructive" disabled={busy === n} onClick={() => convert(n)}><MessageSquareWarning className="w-4 h-4 ml-1" /> تحويل الى مخالفة</Button>
+                <Button size="sm" variant="outline" onClick={() => printReferral(n)}><Printer className="w-4 h-4 ml-1" /> طباعة التنبيهات</Button>
+              </div>
+            )}
           </div>
         ))}
       </div>
