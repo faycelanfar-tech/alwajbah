@@ -306,6 +306,7 @@ function VerbalWarnings({ classId }: { classId: string }) {
   const [list, setList] = useState<Warn[]>([]);
   const [student, setStudent] = useState("");
   const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState("");
   useEffect(() => {
     if (!classId) return;
     try { setList(JSON.parse(localStorage.getItem(key) || "[]")); } catch { setList([]); }
@@ -331,7 +332,6 @@ function VerbalWarnings({ classId }: { classId: string }) {
       date: localDate(), violation: "تكرار التنبيهات الشفهية", teacherName: profile?.full_name || profile?.username,
     });
   };
-  const [busy, setBusy] = useState("");
   const convert = async (name: string) => {
     const st: any = students.find((s: any) => s.full_name === name);
     if (!st || !user) return;
