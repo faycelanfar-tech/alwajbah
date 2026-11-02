@@ -6,3 +6,6 @@
 - [x] Direct printing without saving PDF
 - [x] Rename program to مسار MASAR (header, sidebar, login, welcome)
 - [ ] Verify on two real devices in OneDrive (sync + printing)
+- [x] Fix sidebar logo in offline version; school name back in header
+- [x] Verbal warnings with date+time; print teacher referral at 3 warnings
+- [x] Review IP range + activation key gate (v3.9)

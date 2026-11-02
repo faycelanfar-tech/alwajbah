@@ -33,6 +33,7 @@ export function printPledge(opts: {
   footerUrl?: string | null;
   showIdentity?: boolean | null;
   verbalWarnings?: number | null;
+  warnings?: { date: string; time: string; reason: string }[] | null;
   studentName: string;
   className?: string | null;
   section?: string | null;
@@ -137,8 +138,8 @@ ${studentRows}
 </table>
 <table>
 <tr><td class="g c" colspan="4"><b>التنبيهات الشفهية السابقة من المعلم — عدد المرات: ( ${esc(o.verbalWarnings ?? "    ")} )</b></td></tr>
-<tr><td class="g c n">م</td><td class="g c">التاريخ</td><td class="g c">الحصة</td><td class="g c">سبب التنبيه الشفهي</td></tr>
-${[1, 2, 3].map((i) => `<tr class="tall"><td class="c">${i}</td><td></td><td></td><td></td></tr>`).join("")}
+<tr><td class="g c n">م</td><td class="g c">التاريخ</td><td class="g c">الوقت</td><td class="g c">سبب التنبيه الشفهي</td></tr>
+${Array.from({ length: Math.max(3, o.warnings?.length ?? 0) }, (_, k) => { const w = o.warnings?.[k]; return `<tr class="tall"><td class="c">${k + 1}</td><td class="c">${esc(w?.date || "")}</td><td class="c">${esc(w?.time || "")}</td><td>${esc(w?.reason || "")}</td></tr>`; }).join("")}
 </table>
 <table>
 <tr><td colspan="3" class="txt">أُقرّ أنا المعلم: <b>${esc(o.teacherName || "")}</b> بأنني قمت بتنبيه الطالب المذكور شفهياً وفق ما هو موضّح أعلاه، ولم يلتزم الطالب، وعليه أحيله إلى المشرف الإداري لاتخاذ الإجراء المناسب حسب سياسة إدارة سلوك الطلبة 2026.</td></tr>

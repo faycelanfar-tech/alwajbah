@@ -1,4 +1,6 @@
-import wabsLogo from "@/assets/masar-logo.png.asset.json";
+import wabsLogoUrl from "@/assets/masar-logo.png";
+import { useSettings } from "@/hooks/use-settings";
+const wabsLogo = { url: wabsLogoUrl };
 import { NotificationsBell } from "@/components/notifications-bell";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ChangePasswordDialog } from "@/components/change-password-dialog";
@@ -10,6 +12,7 @@ import { useAuth } from "@/hooks/use-auth";
 
 export function AppHeader() {
   const { role, profile, isOwner } = useAuth();
+  const { settings } = useSettings();
   return (
     <header className="sticky top-0 z-40 bg-card/85 backdrop-blur border-b">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 px-4 md:px-8 py-3">
@@ -17,7 +20,7 @@ export function AppHeader() {
           <img src={wabsLogo.url} alt="شعار مسار" className="w-11 h-11 rounded-full object-cover border" />
           <div className="min-w-0">
             <p className="font-bold truncate leading-tight">مسار MASAR</p>
-            <p className="text-xs text-muted-foreground truncate">نظام المتابعة الأكاديمية والسلوكية</p>
+            <p className="text-xs text-muted-foreground truncate">{settings.school_name?.trim() || "نظام المتابعة الأكاديمية والسلوكية"}</p>
           </div>
         </div>
         <div className="flex items-center gap-1 shrink-0">

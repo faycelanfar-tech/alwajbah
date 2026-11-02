@@ -11,6 +11,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Shuffle, Users, Award, CalendarDays, Plus, Minus, Printer, RotateCcw, Timer, MessageSquareWarning, Play, Pause, Trash2 } from "lucide-react";
 import { esc, printHtml } from "@/lib/academic-print";
+import { printPledge } from "@/lib/pledge-print";
+const localDate = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 
 export const Route = createFileRoute("/_app/tools")({
   component: ToolsPage,
@@ -46,7 +48,7 @@ function useStudents(classId: string) {
     queryKey: ["tools-students", classId],
     enabled: !!classId,
     queryFn: async () =>
-      ((await supabase.from("students").select("id, full_name").eq("class_id", classId).order("full_name")).data ?? []) as any[],
+      ((await supabase.from("students").select("id, full_name, student_number, classes(name)").eq("class_id", classId).order("full_name")).data ?? []) as any[],
   });
 }
 
@@ -295,9 +297,11 @@ function ClassTimer() {
   );
 }
 
-type Warn = { id: string; student: string; date: string; reason: string };
+type Warn = { id: string; student: string; date: string; time?: string; reason: string };
 function VerbalWarnings({ classId }: { classId: string }) {
   const { data: students = [] } = useStudents(classId);
+  const { displayName, settings } = useSettings();
+  const { profile } = useAuth();
   const key = `awj-warnings-${classId}`;
   const [list, setList] = useState<Warn[]>([]);
   const [student, setStudent] = useState("");
@@ -310,11 +314,23 @@ function VerbalWarnings({ classId }: { classId: string }) {
   const save = (l: Warn[]) => { setList(l); localStorage.setItem(key, JSON.stringify(l)); };
   const add = () => {
     if (!student) return;
-    save([{ id: String(Date.now()), student, date: new Date().toISOString().slice(0, 10), reason: reason.trim() }, ...list]);
+    save([{ id: String(Date.now()), student, date: localDate(), time: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }), reason: reason.trim() }, ...list]);
     setReason("");
   };
   const counts: Record<string, number> = {};
   list.forEach((w) => { counts[w.student] = (counts[w.student] || 0) + 1; });
+  const printReferral = (name: string) => {
+    const st = students.find((s: any) => s.full_name === name);
+    const ws = list.filter((w) => w.student === name).slice().reverse();
+    printPledge({
+      kind: "teacher", schoolName: displayName, logoUrl: settings.logo_url,
+      letterheadUrl: (settings as any).letterhead_url, footerUrl: (settings as any).footer_url,
+      showIdentity: (settings as any).print_show_identity,
+      verbalWarnings: ws.length, warnings: ws.map((w) => ({ date: w.date, time: w.time || "", reason: w.reason })),
+      studentName: name, className: st?.classes?.name, studentNumber: st?.student_number,
+      date: localDate(), violation: "تكرار التنبيهات الشفهية", teacherName: profile?.full_name || profile?.username,
+    });
+  };
   return (
     <div className="space-y-4">
       <Card className="border-0 shadow-card">
@@ -333,7 +349,7 @@ function VerbalWarnings({ classId }: { classId: string }) {
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
         {Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([n, c]) => (
           <div key={n} className={`flex justify-between items-center p-3 rounded-lg border ${c >= 3 ? "border-destructive bg-destructive/10" : "bg-secondary/40"}`}>
-            <span className="font-medium">{n}</span><span className="font-bold">{c} {c >= 3 ? "— يُحوَّل للمشرف" : ""}</span>
+            <span className="font-medium">{n}</span><span className="flex items-center gap-2"><span className="font-bold">{c} {c >= 3 ? "— يُحوَّل للمشرف" : ""}</span>{c >= 3 && <Button size="sm" onClick={() => printReferral(n)}><Printer className="w-4 h-4 ml-1" /> طباعة التحويل</Button>}</span>
           </div>
         ))}
       </div>
@@ -343,7 +359,7 @@ function VerbalWarnings({ classId }: { classId: string }) {
           {list.length === 0 && <p className="text-sm text-muted-foreground">لا توجد تنبيهات</p>}
           {list.map((w) => (
             <div key={w.id} className="flex items-center justify-between gap-2 border-b last:border-0 py-1 text-sm">
-              <span><b>{w.student}</b> — {w.date}{w.reason ? ` — ${w.reason}` : ""}</span>
+              <span><b>{w.student}</b> — {w.date}{w.time ? ` الساعة ${w.time}` : ""}{w.reason ? ` — ${w.reason}` : ""}</span>
               <Button size="icon" variant="ghost" onClick={() => save(list.filter((x) => x.id !== w.id))}><Trash2 className="w-4 h-4" /></Button>
             </div>
           ))}
