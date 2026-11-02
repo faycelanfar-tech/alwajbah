@@ -2,7 +2,8 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { usePagePermissions } from "@/hooks/use-page-permissions";
 import { LogOut } from "lucide-react";
-import wabsLogo from "@/assets/masar-logo.png.asset.json";
+import wabsLogoUrl from "@/assets/masar-logo.png";
+const wabsLogo = { url: wabsLogoUrl };
 import { cn } from "@/lib/utils";
 import { ROLE_LABELS, SITE_OWNER_LABEL } from "@/lib/branding";
 
