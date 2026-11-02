@@ -1,7 +1,8 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState, useEffect, FormEvent } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import masarLogo from "@/assets/masar-logo.png.asset.json";
+import masarLogoUrl from "@/assets/masar-logo.png";
+const masarLogo = { url: masarLogoUrl };
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import masarLogo from "@/assets/masar-logo.png.asset.json";
+import masarLogoUrl from "@/assets/masar-logo.png";
+const masarLogo = { url: masarLogoUrl };
 import { DEVELOPER_CREDIT } from "@/lib/branding";
 
 export const Route = createFileRoute("/")({
