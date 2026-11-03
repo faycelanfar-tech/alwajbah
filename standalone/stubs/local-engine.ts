@@ -233,6 +233,21 @@ if (bridge) {
   lastMtime = bridge.stat();
   if (lastMtime == null) { bridge.write(JSON.stringify(db)); lastMtime = bridge.stat(); }
 }
+// إصلاح لمرة واحدة: إظهار التقرير الأكاديمي لدور المعلم (كان محجوباً قديماً)
+if (!ls.get("masar.fix.academic.v1")) {
+  const pp = db.tables.page_permissions ?? [];
+  let changed = false;
+  pp.forEach((r) => {
+    if (r.role === "teacher" && r.page_key === "academic" && !r.visible) {
+      r.visible = true; r.updated_at = new Date().toISOString(); changed = true;
+    }
+  });
+  ls.set("masar.fix.academic.v1", "1");
+  if (changed) {
+    ls.set(DB_KEY, JSON.stringify(db));
+    if (typeof window !== "undefined") window.setTimeout(() => writeShared(), 500);
+  }
+}
 
 function writeShared() {
   if (!bridge) return;
