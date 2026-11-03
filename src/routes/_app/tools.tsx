@@ -307,6 +307,16 @@ function VerbalWarnings({ classId }: { classId: string }) {
   const [student, setStudent] = useState("");
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState("");
+  const [convName, setConvName] = useState("");
+  const [convPeriod, setConvPeriod] = useState("");
+  const [convType, setConvType] = useState("");
+  const { data: vtypes = [] } = useQuery({
+    queryKey: ["violation_types"],
+    queryFn: async () => {
+      const { data } = await supabase.from("violation_types").select("*").order("name");
+      return (data ?? []) as any[];
+    },
+  });
   useEffect(() => {
     if (!classId) return;
     try { setList(JSON.parse(localStorage.getItem(key) || "[]")); } catch { setList([]); }
@@ -332,20 +342,22 @@ function VerbalWarnings({ classId }: { classId: string }) {
       date: localDate(), violation: "تكرار التنبيهات الشفهية", teacherName: profile?.full_name || profile?.username,
     });
   };
-  const convert = async (name: string) => {
+  const convert = async () => {
+    const name = convName;
     const st: any = students.find((s: any) => s.full_name === name);
     if (!st || !user) return;
+    if (!convPeriod || !convType) { alert("اختر الحصة ونوع المخالفة"); return; }
     const ws = list.filter((w) => w.student === name).slice().reverse();
-    if (!confirm(`تحويل ${ws.length} تنبيهات للطالب ${name} إلى مخالفة ترسل للمشرف؟`)) return;
     setBusy(name);
     const desc = "تكرار التنبيهات الشفهية (" + ws.length + "):\n" + ws.map((w, i) => `${i + 1}) ${w.date}${w.time ? " الساعة " + w.time : ""}${w.reason ? " — " + w.reason : ""}`).join("\n");
     const { error } = await supabase.from("violations").insert({
-      student_id: st.id, type_id: null, description: desc, action_taken: null,
+      student_id: st.id, type_id: convType, period: Number(convPeriod), description: desc, action_taken: null,
       violation_date: localDate(), created_by: user.id,
     });
     setBusy("");
     if (error) { alert("تعذر التحويل: " + error.message); return; }
     save(list.filter((w) => w.student !== name));
+    setConvName(""); setConvPeriod(""); setConvType("");
     alert("تم تحويل التنبيهات إلى مخالفة، وهي الآن بانتظار إجراء المشرف في صفحة الإجراءات.");
   };
   return (
@@ -369,8 +381,24 @@ function VerbalWarnings({ classId }: { classId: string }) {
             <div className="flex justify-between items-center"><span className="font-medium">{n}</span><span className="font-bold">{c} تنبيه</span></div>
             {c >= 3 && (
               <div className="flex flex-wrap gap-2">
-                <Button size="sm" variant="destructive" disabled={busy === n} onClick={() => convert(n)}><MessageSquareWarning className="w-4 h-4 ml-1" /> تحويل الى مخالفة</Button>
+                <Button size="sm" variant="destructive" disabled={busy === n} onClick={() => { setConvName(n); setConvPeriod(""); setConvType(""); }}><MessageSquareWarning className="w-4 h-4 ml-1" /> تحويل الى مخالفة</Button>
                 <Button size="sm" variant="outline" onClick={() => printReferral(n)}><Printer className="w-4 h-4 ml-1" /> طباعة التنبيهات</Button>
+              </div>
+            )}
+            {convName === n && (
+              <div className="space-y-2 rounded-md border bg-background p-2">
+                <Select value={convPeriod} onValueChange={setConvPeriod}>
+                  <SelectTrigger><SelectValue placeholder="اختر الحصة" /></SelectTrigger>
+                  <SelectContent>{[1, 2, 3, 4, 5, 6, 7].map((p) => <SelectItem key={p} value={String(p)}>الحصة {p}</SelectItem>)}</SelectContent>
+                </Select>
+                <Select value={convType} onValueChange={setConvType}>
+                  <SelectTrigger><SelectValue placeholder="اختر نوع المخالفة" /></SelectTrigger>
+                  <SelectContent>{vtypes.map((t: any) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}</SelectContent>
+                </Select>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="destructive" disabled={busy === n || !convPeriod || !convType} onClick={convert}>تأكيد الإرسال للمشرف</Button>
+                  <Button size="sm" variant="ghost" onClick={() => setConvName("")}>إلغاء</Button>
+                </div>
               </div>
             )}
           </div>
