@@ -65,16 +65,16 @@ export function MobileBar() {
   const { signOut } = useAuth();
   const { visiblePages } = usePagePermissions();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const items = visiblePages.slice(0, 5);
+  const items = visiblePages;
   return (
     <>
       <div className="lg:hidden fixed bottom-0 inset-x-0 bg-sidebar border-t border-sidebar-border z-50">
-        <div className="flex justify-around">
+        <div className="flex overflow-x-auto">
           {items.map((item) => {
             const Icon = item.icon;
             const active = pathname === item.to || pathname.startsWith(item.to + "/");
             return (
-              <Link key={item.to} to={item.to as "/dashboard"} className={cn("relative flex flex-col items-center gap-1 py-2 px-2 flex-1 text-xs", active ? "text-primary font-bold" : "text-muted-foreground")}>
+              <Link key={item.to} to={item.to as "/dashboard"} className={cn("relative flex flex-col items-center gap-1 py-2 px-2 min-w-[72px] shrink-0 text-xs", active ? "text-primary font-bold" : "text-muted-foreground")}>
                 {active && <span className="absolute top-0 inset-x-3 h-0.5 rounded-full bg-primary" />}
                 <span className={cn("p-1 rounded-lg", active && "bg-primary/10")}>
                   <Icon className="w-5 h-5" />
