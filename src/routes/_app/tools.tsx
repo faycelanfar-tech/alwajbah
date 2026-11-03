@@ -381,8 +381,24 @@ function VerbalWarnings({ classId }: { classId: string }) {
             <div className="flex justify-between items-center"><span className="font-medium">{n}</span><span className="font-bold">{c} تنبيه</span></div>
             {c >= 3 && (
               <div className="flex flex-wrap gap-2">
-                <Button size="sm" variant="destructive" disabled={busy === n} onClick={() => convert(n)}><MessageSquareWarning className="w-4 h-4 ml-1" /> تحويل الى مخالفة</Button>
+                <Button size="sm" variant="destructive" disabled={busy === n} onClick={() => { setConvName(n); setConvPeriod(""); setConvType(""); }}><MessageSquareWarning className="w-4 h-4 ml-1" /> تحويل الى مخالفة</Button>
                 <Button size="sm" variant="outline" onClick={() => printReferral(n)}><Printer className="w-4 h-4 ml-1" /> طباعة التنبيهات</Button>
+              </div>
+            )}
+            {convName === n && (
+              <div className="space-y-2 rounded-md border bg-background p-2">
+                <Select value={convPeriod} onValueChange={setConvPeriod}>
+                  <SelectTrigger><SelectValue placeholder="اختر الحصة" /></SelectTrigger>
+                  <SelectContent>{[1, 2, 3, 4, 5, 6, 7].map((p) => <SelectItem key={p} value={String(p)}>الحصة {p}</SelectItem>)}</SelectContent>
+                </Select>
+                <Select value={convType} onValueChange={setConvType}>
+                  <SelectTrigger><SelectValue placeholder="اختر نوع المخالفة" /></SelectTrigger>
+                  <SelectContent>{vtypes.map((t: any) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}</SelectContent>
+                </Select>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="destructive" disabled={busy === n || !convPeriod || !convType} onClick={convert}>تأكيد الإرسال للمشرف</Button>
+                  <Button size="sm" variant="ghost" onClick={() => setConvName("")}>إلغاء</Button>
+                </div>
               </div>
             )}
           </div>
